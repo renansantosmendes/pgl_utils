@@ -12,7 +12,7 @@ setup(
     version="0.1.0",
     author="Your Name",
     author_email="your.email@example.com",
-    description="Machine Learning, Deep Learning, and GenAI utilities for PUC and IBMEC post-graduation students",
+    description="Machine Learning, Deep Learning, and GenAI utilities for Post-Graduation Lectures",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/renansantosmendes/pgl_utils",
