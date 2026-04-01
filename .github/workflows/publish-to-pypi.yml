@@ -1,0 +1,103 @@
+name: Publish to PyPI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'pgl_utils/**'
+      - 'setup.py'
+      - 'pyproject.toml'
+      - '.github/workflows/publish-to-pypi.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      
+      - name: Lint with flake8
+        run: |
+          flake8 pgl_utils/ tests/
+      
+      - name: Format check with black
+        run: |
+          black --check pgl_utils/ tests/
+      
+      - name: Run tests
+        run: |
+          pytest tests/ --cov=pgl_utils --cov-report=xml
+      
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+
+  build-and-publish:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine wheel setuptools
+      
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(python -c "import re; content=open('setup.py').read(); match=re.search(r'version=[\"']([^\"']+)[\"']', content); print(match.group(1) if match else '0.1.0')")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Build distribution
+        run: |
+          python -m build
+      
+      - name: Check distribution
+        run: |
+          twine check dist/*
+      
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+      
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          release_name: Release v${{ steps.version.outputs.version }}
+          body: |
+            Published to PyPI: https://pypi.org/project/pgl-utils/${{ steps.version.outputs.version }}/
+            
+            Install with:
+            ```bash
+            pip install pgl-utils==${{ steps.version.outputs.version }}
+            ```
+          draft: false
+          prerelease: false
