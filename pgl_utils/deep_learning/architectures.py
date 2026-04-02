@@ -9,12 +9,12 @@ from tensorflow import keras
 def draw_neural_network(model):
     """
     Draw a visual representation of a neural network architecture.
-    
+
     Parameters
     ----------
     model : keras.Model
         A Keras/TensorFlow model to visualize
-    
+
     Returns
     -------
     None
@@ -44,12 +44,15 @@ def draw_neural_network(model):
             G.add_node(node_id)
             # Posicionamento: x = camada, y = neurônio (centralizado)
             pos[node_id] = (i, j - nodes_to_draw / 2)
-            node_colors.append('lightgreen' if i == 0 else ('orange' if i == len(layers)-1 else 'skyblue'))
+            node_colors.append(
+                'lightgreen' if i == 0 else
+                ('orange' if i == len(layers) - 1 else 'skyblue')
+            )
 
     # Adicionar arestas entre camadas adjacentes
     for i in range(len(layers) - 1):
         curr_layer_nodes = [n for n in G.nodes if n.startswith(f'{i}_')]
-        next_layer_nodes = [n for n in G.nodes if n.startswith(f'{i+1}_')]
+        next_layer_nodes = [n for n in G.nodes if n.startswith(f'{i + 1}_')]
         for u in curr_layer_nodes:
             for v in next_layer_nodes:
                 G.add_edge(u, v)
@@ -61,7 +64,7 @@ def draw_neural_network(model):
 
     # Adicionar legendas de camadas
     for i, (layer_name, n_nodes) in enumerate(layers):
-        plt.text(i, (n_nodes/2) + 0.8, f'{layer_name}\n({n_nodes} neurônios)',
+        plt.text(i, (n_nodes / 2) + 0.8, f'{layer_name}\n({n_nodes} neurônios)',
                  horizontalalignment='center', fontsize=9, fontweight='bold')
 
     plt.title('Representação Completa da Rede Neural', fontsize=15)
@@ -73,4 +76,4 @@ def placeholder():
     """
     Placeholder function
     """
-    return "Deep Learning architectures utilities"
+    return "DL architectures utilities"
