@@ -71,7 +71,7 @@ jobs:
       - name: Get version
         id: version
         run: |
-          VERSION=$(python -c "import re; content=open('setup.py').read(); match=re.search(r'version=[\"']([^\"']+)[\"']', content); print(match.group(1) if match else '0.1.0')")
+          VERSION=$(python -c "import re; content=open('setup.py').read(); match=re.search(r\"version=['\\\"]([^'\\\"]+)['\\\"]\", content); print(match.group(1) if match else '0.1.0')")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
       
       - name: Build distribution
