@@ -3,7 +3,7 @@ Tests for core module
 """
 
 import pytest
-from post_graduation_utils.core import utils
+from pgl_utils.core import utils
 
 
 def test_placeholder():
