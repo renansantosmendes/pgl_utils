@@ -20,7 +20,7 @@ print(config.PUCConfig.get_info())
 ### Step 3: Start using the library
 
 ```python
-from post_graduation_utils import ml, dl, genai
+from post_graduation_utils import ml, deep_learning, genai
 # Your code here
 ```
 
@@ -46,7 +46,7 @@ print(config.IBMECConfig.get_info())
 ### Step 3: Start using the library
 
 ```python
-from post_graduation_utils import ml, dl, genai
+from post_graduation_utils import ml, deep_learning, genai
 # Your code here
 ```
 
@@ -65,10 +65,10 @@ Includes: scikit-learn, xgboost, lightgbm
 ### Deep Learning Focus
 
 ```bash
-pip install "post-graduation-utils[dl]"
+pip install "post-graduation-utils[deep_learning]"
 ```
 
-Includes: torch, tensorflow, keras
+Includes: torch, tensorflow, keras, networkx, matplotlib
 
 ### Generative AI Focus
 
@@ -122,8 +122,8 @@ If you get errors about missing modules, install the feature extras:
 # For ML features
 pip install "post-graduation-utils[ml]"
 
-# For DL features
-pip install "post-graduation-utils[dl]"
+# For Deep Learning features
+pip install "post-graduation-utils[deep_learning]"
 
 # For GenAI features
 pip install "post-graduation-utils[genai]"

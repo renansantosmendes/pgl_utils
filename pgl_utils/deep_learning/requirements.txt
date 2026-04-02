@@ -1,0 +1,4 @@
+# Deep Learning module requirements
+networkx>=2.8.0
+matplotlib>=3.5.0
+tensorflow>=2.10.0

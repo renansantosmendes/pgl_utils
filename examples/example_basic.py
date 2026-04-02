@@ -1,11 +1,11 @@
 """
-Basic example of using post_graduation_utils
+Basic example of using pgl_utils
 """
 
-from post_graduation_utils import core
-from post_graduation_utils.ml import preprocessing, models
-from post_graduation_utils.puc import config as puc_config
-from post_graduation_utils.ibmec import config as ibmec_config
+from pgl_utils import core
+from pgl_utils.ml import preprocessing, models
+from pgl_utils.puc import config as puc_config
+from pgl_utils.ibmec import config as ibmec_config
 
 
 def main():

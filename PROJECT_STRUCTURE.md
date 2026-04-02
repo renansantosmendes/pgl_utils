@@ -17,7 +17,7 @@ post_graduation_utils/
 │   │   ├── preprocessing.py           # Data prep, cleaning, feature engineering
 │   │   └── models.py                  # Model building, evaluation, utilities
 │   │
-│   ├── 📁 dl/                         # 🧠 DEEP LEARNING
+│   ├── 📁 deep_learning/              # 🧠 DEEP LEARNING
 │   │   ├── __init__.py
 │   │   ├── architectures.py           # Neural network architectures
 │   │   └── training.py                # Training loops, callbacks, utilities
@@ -79,7 +79,7 @@ post_graduation_utils/
 - Model selection and evaluation
 - Training and prediction helpers
 
-### 🔹 `dl/`
+### 🔹 `deep_learning/`
 **Deep Learning Tools**
 - Pre-built neural network architectures
 - Training utilities (loss functions, optimizers)
@@ -136,8 +136,8 @@ pip install post-graduation-utils
 # With ML tools
 pip install "post-graduation-utils[ml]"
 
-# With DL tools
-pip install "post-graduation-utils[dl]"
+# With Deep Learning tools
+pip install "post-graduation-utils[deep_learning]"
 
 # With GenAI tools
 pip install "post-graduation-utils[genai]"
@@ -175,11 +175,11 @@ from post_graduation_utils import ml
 from post_graduation_utils.ml import preprocessing, models
 ```
 
-### Importing from DL
+### Importing from Deep Learning
 
 ```python
-from post_graduation_utils import dl
-from post_graduation_utils.dl import architectures, training
+from post_graduation_utils import deep_learning
+from post_graduation_utils.deep_learning import architectures, training
 ```
 
 ### Importing from GenAI

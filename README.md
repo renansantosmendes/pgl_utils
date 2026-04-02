@@ -1,11 +1,11 @@
-# Post Graduation Utils
+# PGL Utils
 
 A comprehensive library for Machine Learning, Deep Learning, and Generative AI utilities, designed for PUC and IBMEC post-graduation students.
 
 ## Features
 
 - **Machine Learning (ML)**: Preprocessing, models, and utilities for classical ML
-- **Deep Learning (DL)**: Architectures, training utilities, and pre-trained models
+- **Deep Learning**: Architectures, training utilities, and pre-trained models
 - **Generative AI (GenAI)**: LLM utilities, RAG implementations, and prompt engineering tools
 - **Institution-specific extensions**: Customized tools for PUC and IBMEC students
 
@@ -14,33 +14,33 @@ A comprehensive library for Machine Learning, Deep Learning, and Generative AI u
 ### Basic Installation
 
 ```bash
-pip install post-graduation-utils
+pip install pgl-utils
 ```
 
 ### Installation with specific features
 
 ```bash
 # Machine Learning only
-pip install post-graduation-utils[ml]
+pip install pgl-utils[ml]
 
 # Deep Learning only
-pip install post-graduation-utils[dl]
+pip install pgl-utils[deep_learning]
 
 # Generative AI only
-pip install post-graduation-utils[genai]
+pip install pgl-utils[genai]
 
 # All features
-pip install post-graduation-utils[all]
+pip install pgl-utils[all]
 
 # Development
-pip install post-graduation-utils[dev]
+pip install pgl-utils[dev]
 ```
 
 ### Installation from source
 
 ```bash
-git clone https://github.com/renansantosmendes/post_graduation_utils.git
-cd post_graduation_utils
+git clone https://github.com/renansantosmendes/pgl_utils.git
+cd pgl_utils
 pip install -e .
 ```
 
@@ -49,7 +49,7 @@ pip install -e .
 ### Using Core Utilities
 
 ```python
-from post_graduation_utils import core
+from pgl_utils import core
 
 # Your code here
 ```
@@ -57,7 +57,7 @@ from post_graduation_utils import core
 ### Using Machine Learning Tools
 
 ```python
-from post_graduation_utils.ml import preprocessing, models
+from pgl_utils.ml import preprocessing, models
 
 # Your code here
 ```
@@ -65,7 +65,7 @@ from post_graduation_utils.ml import preprocessing, models
 ### Using Deep Learning Tools
 
 ```python
-from post_graduation_utils.dl import architectures, training
+from pgl_utils.deep_learning import draw_neural_network
 
 # Your code here
 ```
@@ -73,7 +73,7 @@ from post_graduation_utils.dl import architectures, training
 ### Using Generative AI Tools
 
 ```python
-from post_graduation_utils.genai import llm, rag
+from pgl_utils.genai import llm, rag
 
 # Your code here
 ```
@@ -83,7 +83,7 @@ from post_graduation_utils.genai import llm, rag
 #### For PUC Students
 
 ```python
-from post_graduation_utils.puc import config
+from pgl_utils.puc import config
 
 puc_info = config.PUCConfig.get_info()
 ```
@@ -91,7 +91,7 @@ puc_info = config.PUCConfig.get_info()
 #### For IBMEC Students
 
 ```python
-from post_graduation_utils.ibmec import config
+from pgl_utils.ibmec import config
 
 ibmec_info = config.IBMECConfig.get_info()
 ```
@@ -99,8 +99,8 @@ ibmec_info = config.IBMECConfig.get_info()
 ## Project Structure
 
 ```
-post_graduation_utils/
-├── post_graduation_utils/          # Main package
+pgl_utils/
+├── pgl_utils/          # Main package
 │   ├── __init__.py
 │   ├── core/                       # Shared utilities
 │   │   ├── __init__.py
@@ -109,7 +109,7 @@ post_graduation_utils/
 │   │   ├── __init__.py
 │   │   ├── preprocessing.py
 │   │   └── models.py
-│   ├── dl/                         # Deep Learning module
+│   ├── deep_learning/              # Deep Learning module
 │   │   ├── __init__.py
 │   │   ├── architectures.py
 │   │   └── training.py
@@ -146,7 +146,7 @@ post_graduation_utils/
 - xgboost
 - lightgbm
 
-### Deep Learning (DL)
+### Deep Learning
 - torch
 - tensorflow
 - keras
@@ -171,7 +171,7 @@ pytest tests/
 With coverage:
 
 ```bash
-pytest tests/ --cov=post_graduation_utils
+pytest tests/ --cov=pgl_utils
 ```
 
 ## Contributing
@@ -184,11 +184,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Support
 
-For issues, questions, or suggestions, please open an issue on [GitHub](https://github.com/renansantosmendes/post_graduation_utils/issues).
+For issues, questions, or suggestions, please open an issue on [GitHub](https://github.com/renansantosmendes/pgl_utils/issues).
 
 ## Changelog
 
 ### Version 0.1.0
 - Initial release
-- Core functionality for ML, DL, and GenAI
+- Core functionality for ML, Deep Learning, and GenAI
 - Institution-specific extensions for PUC and IBMEC

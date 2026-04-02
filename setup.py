@@ -47,10 +47,12 @@ setup(
             "xgboost>=1.5.0",
             "lightgbm>=3.3.0",
         ],
-        "dl": [
+        "deep_learning": [
             "torch>=1.10.0",
             "tensorflow>=2.8.0",
             "keras>=2.8.0",
+            "networkx>=2.8.0",
+            "matplotlib>=3.5.0",
         ],
         "genai": [
             "openai>=0.27.0",
@@ -61,6 +63,8 @@ setup(
             "torch>=1.10.0",
             "tensorflow>=2.8.0",
             "keras>=2.8.0",
+            "networkx>=2.8.0",
+            "matplotlib>=3.5.0",
             "openai>=0.27.0",
             "langchain>=0.0.100",
             "huggingface-hub>=0.12.0",

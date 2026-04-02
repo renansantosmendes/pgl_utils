@@ -9,7 +9,7 @@ This library provides utilities for:
    - Model building and evaluation
    - Feature engineering
 
-2. **Deep Learning (DL)**
+2. **Deep Learning**
    - Neural network architectures
    - Training utilities
    - Transfer learning helpers
@@ -49,10 +49,11 @@ from post_graduation_utils.ml import preprocessing
 ### Example 3: Deep Learning
 
 ```python
-from post_graduation_utils.dl import architectures, training
+from post_graduation_utils.deep_learning import draw_neural_network
 
-# Use DL tools
-# Example implementation coming soon
+# Use Deep Learning tools
+# Example: Draw neural network architecture
+# draw_neural_network(model)
 ```
 
 ### Example 4: Generative AI

@@ -13,7 +13,7 @@ pip install post-graduation-utils
 ### 2. Importar
 
 ```python
-from post_graduation_utils import core, ml, dl, genai
+from post_graduation_utils import core, ml, deep_learning, genai
 ```
 
 ### 3. Usar!
@@ -36,7 +36,7 @@ pip install "post-graduation-utils[ml]"
 
 ### Apenas Deep Learning
 ```bash
-pip install "post-graduation-utils[dl]"
+pip install "post-graduation-utils[deep_learning]"
 ```
 ✅ PyTorch, TensorFlow, Keras
 
@@ -70,11 +70,11 @@ Preprocessing, modelos, e avaliação
 from post_graduation_utils.ml import preprocessing, models
 ```
 
-### `dl` - Deep Learning
-Arquiteturas, treinamento, transfer learning
+### `deep_learning` - Deep Learning
+Arquiteturas, treinamento, transfer learning, visualização de redes
 
 ```python
-from post_graduation_utils.dl import architectures, training
+from post_graduation_utils.deep_learning import draw_neural_network
 ```
 
 ### `genai` - Generative AI

@@ -9,7 +9,7 @@ __email__ = "your.email@example.com"
 
 from . import core
 from . import ml
-from . import dl
+from . import deep_learning
 from . import genai
 
-__all__ = ["core", "ml", "dl", "genai"]
+__all__ = ["core", "ml", "deep_learning", "genai"]
