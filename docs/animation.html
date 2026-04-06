@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backpropagation — Passo a Passo</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #f5f3ee;
+  --paper:    #fffef9;
+  --ink:      #1a1814;
+  --muted:    #7a7568;
+  --border:   #ddd9ce;
+  --forward:  #d45a2a;
+  --backward: #2a6dd4;
+  --update:   #2aa858;
+  --neuron:   #1a1814;
+  --accent:   #d45a2a;
+  --highlight:#fff3cd;
+  --shadow:   rgba(26,24,20,0.1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── HEADER ── */
+.header {
+  background: var(--ink);
+  color: var(--bg);
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.header h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+}
+
+.header h1 span { color: var(--forward); }
+
+.sample-selector {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+}
+
+.sample-selector label {
+  font-size: .75rem;
+  color: #aaa;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.sample-btn {
+  background: #333;
+  border: 1px solid #555;
+  color: #eee;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .72rem;
+  padding: .3rem .7rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+
+.sample-btn:hover { background: #444; }
+.sample-btn.active { background: var(--forward); border-color: var(--forward); color: #fff; }
+
+/* ── MAIN LAYOUT ── */
+.main {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  flex: 1;
+  gap: 0;
+}
+
+@media (max-width: 900px) {
+  .main { grid-template-columns: 1fr; }
+}
+
+/* ── CANVAS ── */
+.canvas-col {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+#netCanvas {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--paper);
+  box-shadow: 0 2px 12px var(--shadow);
+  display: block;
+}
+
+/* ── PROGRESS ── */
+.progress-bar-wrap {
+  background: var(--border);
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--forward);
+  transition: width .3s;
+}
+
+.step-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .72rem;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+.phase-tag {
+  display: inline-block;
+  padding: .15rem .5rem;
+  border-radius: 3px;
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.phase-forward  { background: #fde8dc; color: var(--forward); }
+.phase-backward { background: #dce8fd; color: var(--backward); }
+.phase-update   { background: #dcfde8; color: var(--update); }
+.phase-result   { background: #f0dcfd; color: #7a2ad4; }
+
+/* ── CONTROLS ── */
+.controls {
+  display: flex;
+  gap: .6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-nav {
+  background: var(--ink);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: .85rem;
+  border: none;
+  border-radius: 8px;
+  padding: .65rem 1.4rem;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.btn-nav:hover { background: #333; transform: translateY(-1px); }
+.btn-nav:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; }
+
+.btn-nav.fwd { background: var(--forward); }
+.btn-nav.fwd:hover { background: #b84a1e; }
+
+.epoch-info {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .72rem;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+/* ── SIDE PANEL ── */
+.side-panel {
+  border-left: 1px solid var(--border);
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.side-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.side-tab {
+  flex: 1;
+  padding: .65rem .5rem;
+  font-size: .72rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
+  letter-spacing: .04em;
+}
+
+.side-tab.active { color: var(--ink); border-color: var(--forward); }
+
+.tab-content { display: none; flex: 1; overflow-y: auto; padding: 1.2rem; }
+.tab-content.active { display: block; }
+
+/* ── MATH CARD ── */
+.math-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: .8rem;
+  transition: box-shadow .2s, border-color .2s;
+}
+
+.math-card.highlighted {
+  border-color: var(--forward);
+  box-shadow: 0 0 0 3px rgba(212,90,42,.12);
+  background: #fff8f5;
+}
+
+.math-card.backward.highlighted {
+  border-color: var(--backward);
+  box-shadow: 0 0 0 3px rgba(42,109,212,.12);
+  background: #f5f8ff;
+}
+
+.math-card.update.highlighted {
+  border-color: var(--update);
+  box-shadow: 0 0 0 3px rgba(42,168,88,.12);
+  background: #f5fff8;
+}
+
+.math-card h4 {
+  font-size: .7rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: .06em;
+  margin-bottom: .5rem;
+  text-transform: uppercase;
+}
+
+.math-formula {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .8rem;
+  color: var(--ink);
+  background: rgba(255,255,255,.7);
+  padding: .4rem .6rem;
+  border-radius: 5px;
+  margin: .3rem 0;
+  border-left: 3px solid var(--border);
+  word-break: break-word;
+}
+
+.math-formula.active-formula {
+  border-left-color: var(--forward);
+  background: #fff3ee;
+  font-weight: 700;
+}
+
+.math-formula.active-backward { border-left-color: var(--backward); background: #eef3ff; font-weight: 700; }
+.math-formula.active-update   { border-left-color: var(--update);   background: #eefff3; font-weight: 700; }
+
+.math-val {
+  font-size: .75rem;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: .4rem;
+}
+
+.math-val b { color: var(--ink); }
+
+/* ── EXPLANATION PANEL ── */
+.explanation-box {
+  background: var(--highlight);
+  border: 1px solid #e8d88a;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.explanation-box .step-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin-bottom: .4rem;
+}
+
+.explanation-box p {
+  font-size: .82rem;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.explanation-box p b { color: var(--forward); }
+.explanation-box p .bw { color: var(--backward); }
+.explanation-box p .up { color: var(--update); }
+
+/* ── WEIGHTS TABLE ── */
+.weights-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .5rem;
+  margin-top: .5rem;
+}
+
+.weight-cell {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .5rem .6rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .7rem;
+}
+
+.weight-cell .w-label { color: var(--muted); font-size: .62rem; }
+.weight-cell .w-val   { color: var(--ink); font-weight: 700; font-size: .8rem; margin-top: .1rem; }
+.weight-cell .w-delta { font-size: .62rem; margin-top: .1rem; }
+.weight-cell .w-delta.neg { color: #c0392b; }
+.weight-cell .w-delta.pos { color: #27ae60; }
+
+.weight-cell.changed { border-color: var(--update); background: #f0fff5; }
+
+/* ── LOSS CHART ── */
+.loss-chart-wrap {
+  margin-top: .5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: .8rem;
+}
+
+.loss-chart-wrap h4 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .65rem;
+  color: var(--muted);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: .5rem;
+}
+
+#lossCanvas { width: 100%; display: block; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>BACKPROP<span>.</span>VIZ — Rede 2→3→1</h1>
+  <div class="sample-selector">
+    <label>AMOSTRA:</label>
+    <button class="sample-btn active" onclick="setSample(0)">[1, 0] → 1</button>
+    <button class="sample-btn" onclick="setSample(1)">[0, 1] → 1</button>
+    <button class="sample-btn" onclick="setSample(2)">[1, 1] → 0</button>
+    <button class="sample-btn" onclick="setSample(3)">[0, 0] → 0</button>
+  </div>
+</div>
+
+<div class="main">
+  <!-- COLUNA ESQUERDA: rede + controles -->
+  <div class="canvas-col">
+    <canvas id="netCanvas" height="340"></canvas>
+
+    <div>
+      <div class="step-label">
+        <span id="stepLabel">Etapa 1 de 10</span>
+        <span id="phaseTag"></span>
+      </div>
+      <div style="margin:.4rem 0;">
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressFill" style="width:10%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn-nav" id="btnPrev" onclick="prevStep()">← Anterior</button>
+      <button class="btn-nav fwd" id="btnNext" onclick="nextStep()">Próximo →</button>
+      <button class="btn-nav" style="background:#555;font-size:.72rem;padding:.5rem .9rem;" onclick="resetAll()">↺ Reiniciar</button>
+      <span class="epoch-info" id="epochInfo">Época 1</span>
+    </div>
+  </div>
+
+  <!-- COLUNA DIREITA: painel explicativo -->
+  <div class="side-panel">
+    <div class="side-tabs">
+      <div class="side-tab active" onclick="switchTab('explain')">EXPLICAÇÃO</div>
+      <div class="side-tab" onclick="switchTab('math')">MATEMÁTICA</div>
+      <div class="side-tab" onclick="switchTab('weights')">PESOS</div>
+    </div>
+
+    <div class="tab-content active" id="tab-explain">
+      <div class="explanation-box" id="explainBox">
+        <div class="step-num" id="explainStepNum">ETAPA 0 / INICIALIZAÇÃO</div>
+        <p id="explainText">Carregando...</p>
+      </div>
+      <div class="loss-chart-wrap">
+        <h4>HISTÓRICO DE LOSS</h4>
+        <canvas id="lossCanvas" height="80"></canvas>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-math">
+      <!-- Forward pass cards -->
+      <div class="math-card" id="mc-input">
+        <h4>⬛ ENTRADA</h4>
+        <div class="math-formula" id="mf-input">x₁ = ? , x₂ = ?</div>
+        <div class="math-formula" id="mf-target">y_real = ?</div>
+      </div>
+      <div class="math-card" id="mc-z1">
+        <h4>➡ FORWARD — Camada Oculta (z)</h4>
+        <div class="math-formula" id="mf-z1">zⱼ = Σ wᵢⱼ·xᵢ + bⱼ</div>
+        <div class="math-val" id="mv-z1">—</div>
+      </div>
+      <div class="math-card" id="mc-a1">
+        <h4>➡ FORWARD — Ativação Oculta (σ)</h4>
+        <div class="math-formula" id="mf-a1">aⱼ = σ(zⱼ) = 1/(1+e⁻ᶻʲ)</div>
+        <div class="math-val" id="mv-a1">—</div>
+      </div>
+      <div class="math-card" id="mc-out">
+        <h4>➡ FORWARD — Saída</h4>
+        <div class="math-formula" id="mf-out">z_out = Σ wⱼ·aⱼ + b_out</div>
+        <div class="math-formula" id="mf-aout">ŷ = σ(z_out)</div>
+        <div class="math-val" id="mv-out">—</div>
+      </div>
+      <div class="math-card" id="mc-loss">
+        <h4>📉 LOSS (BCE)</h4>
+        <div class="math-formula" id="mf-loss">L = −[y·log(ŷ) + (1−y)·log(1−ŷ)]</div>
+        <div class="math-val" id="mv-loss">—</div>
+      </div>
+      <div class="math-card backward" id="mc-dout">
+        <h4>⬅ BACKWARD — Gradiente Saída</h4>
+        <div class="math-formula" id="mf-dout">∂L/∂ŷ = −y/ŷ + (1−y)/(1−ŷ)</div>
+        <div class="math-formula" id="mf-dz_out">∂L/∂z_out = ŷ − y</div>
+        <div class="math-val" id="mv-dout">—</div>
+      </div>
+      <div class="math-card backward" id="mc-dw2">
+        <h4>⬅ BACKWARD — Grad. Pesos W2</h4>
+        <div class="math-formula" id="mf-dw2">∂L/∂w2ⱼ = δ_out · aⱼ</div>
+        <div class="math-val" id="mv-dw2">—</div>
+      </div>
+      <div class="math-card backward" id="mc-dh">
+        <h4>⬅ BACKWARD — Grad. Camada Oculta</h4>
+        <div class="math-formula" id="mf-dh">δⱼ = (∂L/∂z_out · w2ⱼ) · σ′(zⱼ)</div>
+        <div class="math-formula" id="mf-sig">σ′(z) = σ(z)·(1−σ(z))</div>
+        <div class="math-val" id="mv-dh">—</div>
+      </div>
+      <div class="math-card backward" id="mc-dw1">
+        <h4>⬅ BACKWARD — Grad. Pesos W1</h4>
+        <div class="math-formula" id="mf-dw1">∂L/∂w1ᵢⱼ = δⱼ · xᵢ</div>
+        <div class="math-val" id="mv-dw1">—</div>
+      </div>
+      <div class="math-card update" id="mc-upd">
+        <h4>✅ ATUALIZAÇÃO DOS PESOS</h4>
+        <div class="math-formula" id="mf-upd">w ← w − α · ∂L/∂w</div>
+        <div class="math-val" id="mv-upd">α = 0.5</div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-weights">
+      <p style="font-size:.72rem;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:.8rem;">PESOS ATUAIS DA REDE</p>
+      <p style="font-size:.72rem;color:var(--muted);margin-bottom:.3rem;">W1 — Entrada → Oculta</p>
+      <div class="weights-grid" id="w1-grid"></div>
+      <p style="font-size:.72rem;color:var(--muted);margin:.8rem 0 .3rem;">W2 — Oculta → Saída</p>
+      <div class="weights-grid" id="w2-grid"></div>
+      <p style="font-size:.72rem;color:var(--muted);margin:.8rem 0 .3rem;">BIASES</p>
+      <div class="weights-grid" id="bias-grid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+//  REDE NEURAL 2→3→1
+// ══════════════════════════════════════
+const LR = 0.5;
+
+// Pesos iniciais fixos (para reproducibilidade didática)
+let W1 = [
+  [0.15, 0.20],  // h1: w de x1, x2
+  [0.25, 0.30],  // h2
+  [0.35, 0.40],  // h3
+];
+let b1 = [0.35, 0.35, 0.35];
+
+let W2 = [0.45, 0.50, 0.55]; // out: w de h1,h2,h3
+let b2 = 0.60;
+
+// Estado inicial salvo
+const W1_0 = JSON.parse(JSON.stringify(W1));
+const b1_0 = [...b1];
+const W2_0 = [...W2];
+const b2_0 = b2;
+
+// Amostras
+const SAMPLES = [
+  { x: [1, 0], y: 1 },
+  { x: [0, 1], y: 1 },
+  { x: [1, 1], y: 0 },
+  { x: [0, 0], y: 0 },
+];
+
+let sampleIdx = 0;
+let currentStep = 0;
+let lossHistory = [];
+let epochCount = 1;
+
+// Computação forward/backward
+let state = {};
+
+function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
+function sigmoidD(z) { const s = sigmoid(z); return s * (1 - s); }
+
+function compute() {
+  const { x, y } = SAMPLES[sampleIdx];
+
+  // Forward
+  const z1 = W1.map((row, j) => row[0]*x[0] + row[1]*x[1] + b1[j]);
+  const a1 = z1.map(sigmoid);
+  const z_out = W2.reduce((s, w, j) => s + w * a1[j], b2);
+  const yhat = sigmoid(z_out);
+  const loss = -(y * Math.log(yhat + 1e-9) + (1 - y) * Math.log(1 - yhat + 1e-9));
+
+  // Backward
+  const d_zout = yhat - y;                         // ∂L/∂z_out
+  const dW2    = a1.map(aj => d_zout * aj);
+  const db2    = d_zout;
+  const d_a1   = W2.map(w => d_zout * w);          // ∂L/∂aⱼ
+  const d_z1   = d_a1.map((da, j) => da * sigmoidD(z1[j])); // δⱼ
+  const dW1    = W1.map((_, j) => x.map(xi => d_z1[j] * xi));
+  const db1    = [...d_z1];
+
+  state = { x, y, z1, a1, z_out, yhat, loss, d_zout, dW2, db2, d_a1, d_z1, dW1, db1 };
+}
+
+// ══════════════════════════════════════
+//  ETAPAS
+// ══════════════════════════════════════
+// Etapas: 0=init, 1=fwd-input, 2=fwd-z1, 3=fwd-a1, 4=fwd-out, 5=loss,
+//         6=bwd-dout, 7=bwd-dw2, 8=bwd-dh, 9=bwd-dw1, 10=update
+const TOTAL_STEPS = 10;
+
+const STEP_INFO = [
+  {
+    phase: 'init', tag: '',
+    title: 'ETAPA 0 / INICIALIZAÇÃO',
+    text: 'A rede começa com <b>pesos aleatórios</b> (aqui fixos para fins didáticos). Temos 2 entradas, 3 neurônios ocultos e 1 saída. Vamos processar uma amostra de treinamento.',
+    highlight: [],
+  },
+  {
+    phase: 'forward', tag: 'FORWARD PASS',
+    title: 'ETAPA 1 / ENTRADA',
+    text: 'Alimentamos a rede com <b>x₁ e x₂</b>. O valor alvo (rótulo) é <b>y</b>. Os valores de entrada percorrerão cada camada multiplicados pelos pesos correspondentes.',
+    highlight: ['input'],
+  },
+  {
+    phase: 'forward', tag: 'FORWARD PASS',
+    title: 'ETAPA 2 / PRÉ-ATIVAÇÃO OCULTA',
+    text: 'Calculamos <b>zⱼ = Σ wᵢⱼ·xᵢ + bⱼ</b> para cada neurônio oculto j=1,2,3. É a soma ponderada das entradas antes da função de ativação.',
+    highlight: ['z1', 'w1'],
+  },
+  {
+    phase: 'forward', tag: 'FORWARD PASS',
+    title: 'ETAPA 3 / ATIVAÇÃO OCULTA (SIGMOID)',
+    text: 'Aplicamos a <b>sigmoid</b> em cada zⱼ: aⱼ = 1/(1+e⁻ᶻʲ). Ela comprime o valor para o intervalo (0,1), introduzindo não-linearidade.',
+    highlight: ['a1', 'w1'],
+  },
+  {
+    phase: 'forward', tag: 'FORWARD PASS',
+    title: 'ETAPA 4 / CAMADA DE SAÍDA',
+    text: 'Os neurônios ocultos alimentam a saída: <b>z_out = Σ w2ⱼ·aⱼ + b_out</b>. Aplicamos sigmoid novamente para obter <b>ŷ ∈ (0,1)</b>, a predição.',
+    highlight: ['out', 'w2'],
+  },
+  {
+    phase: 'forward', tag: 'LOSS',
+    title: 'ETAPA 5 / CÁLCULO DO ERRO (LOSS)',
+    text: 'Usamos <b>Binary Cross-Entropy</b>: L = −[y·log(ŷ) + (1−y)·log(1−ŷ)]. Quanto mais longe ŷ estiver de y, maior o erro. Nosso objetivo é minimizar L.',
+    highlight: ['loss'],
+  },
+  {
+    phase: 'backward', tag: 'BACKWARD PASS',
+    title: 'ETAPA 6 / GRADIENTE NA SAÍDA',
+    text: 'Iniciamos o <span class="bw">backprop</span>! Calculamos <b>∂L/∂z_out = ŷ − y</b>. Esse é o "sinal de erro" que vai ser propagado de volta pela rede.',
+    highlight: ['dout', 'out'],
+  },
+  {
+    phase: 'backward', tag: 'BACKWARD PASS',
+    title: 'ETAPA 7 / GRAD. PESOS W2',
+    text: 'Calculamos <b>∂L/∂w2ⱼ = δ_out · aⱼ</b>. A regra da cadeia diz: o gradiente de cada peso de saída é o erro na saída multiplicado pela ativação que veio desse neurônio.',
+    highlight: ['dw2', 'w2'],
+  },
+  {
+    phase: 'backward', tag: 'BACKWARD PASS',
+    title: 'ETAPA 8 / GRAD. CAMADA OCULTA',
+    text: 'Propagamos o erro de volta: <b>δⱼ = (δ_out · w2ⱼ) · σ′(zⱼ)</b>. O erro chega em cada neurônio oculto ponderado pelo seu peso, multiplicado pela derivada da sigmoid.',
+    highlight: ['dh', 'w2', 'a1'],
+  },
+  {
+    phase: 'backward', tag: 'BACKWARD PASS',
+    title: 'ETAPA 9 / GRAD. PESOS W1',
+    text: 'Calculamos <b>∂L/∂w1ᵢⱼ = δⱼ · xᵢ</b>. O gradiente de cada peso W1 é o erro local do neurônio oculto multiplicado pela entrada que chegou por aquele peso.',
+    highlight: ['dw1', 'w1'],
+  },
+  {
+    phase: 'update', tag: 'ATUALIZAÇÃO',
+    title: 'ETAPA 10 / ATUALIZAÇÃO DOS PESOS',
+    text: 'Aplicamos <span class="up">Gradient Descent</span>: <b>w ← w − α · ∂L/∂w</b> com α=0.5. Cada peso é ajustado na direção oposta ao gradiente, reduzindo o erro.',
+    highlight: ['update'],
+  },
+];
+
+// ══════════════════════════════════════
+//  CANVAS DA REDE
+// ══════════════════════════════════════
+const canvas = document.getElementById('netCanvas');
+const ctx = canvas.getContext('2d');
+
+const LAYERS = [
+  { label: 'Entrada', n: 2, x: 0.12 },
+  { label: 'Oculta',  n: 3, x: 0.50 },
+  { label: 'Saída',   n: 1, x: 0.88 },
+];
+
+function neuronPos(layerIdx, neuronIdx) {
+  const W = canvas.width, H = canvas.height;
+  const lx = LAYERS[layerIdx].x * W;
+  const n  = LAYERS[layerIdx].n;
+  const spacing = H / (n + 1);
+  const ly = spacing * (neuronIdx + 1);
+  return { x: lx, y: ly };
+}
+
+function resizeCanvas() {
+  const col = canvas.parentElement;
+  canvas.width  = col.clientWidth - 48;
+  canvas.height = 340;
+  drawNet();
+}
+
+function drawNet() {
+  if (!canvas.width) return;
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Fundo
+  ctx.fillStyle = '#fffef9';
+  ctx.fillRect(0, 0, W, H);
+
+  const hi = STEP_INFO[currentStep].highlight;
+  const s  = state;
+
+  // ── CONEXÕES W1 ──
+  for (let j = 0; j < 3; j++) {
+    for (let i = 0; i < 2; i++) {
+      const p0 = neuronPos(0, i);
+      const p1 = neuronPos(1, j);
+      const isHi = hi.includes('w1') || hi.includes('input');
+      const w = W1[j][i];
+      drawConnection(p0, p1, w, isHi ? (hi.includes('w1') ? 'forward' : 'neutral') : 'neutral');
+      if (hi.includes('w1') || hi.includes('dw1')) {
+        const mx = (p0.x + p1.x) / 2, my = (p0.y + p1.y) / 2;
+        drawWeightLabel(mx, my, `w${i+1}${j+1}=${w.toFixed(3)}`);
+      }
+    }
+  }
+
+  // ── CONEXÕES W2 ──
+  for (let j = 0; j < 3; j++) {
+    const p1 = neuronPos(1, j);
+    const p2 = neuronPos(2, 0);
+    const isHi = hi.includes('w2') || hi.includes('out');
+    const w = W2[j];
+    drawConnection(p1, p2, w, isHi ? 'forward' : 'neutral');
+    if (hi.includes('w2') || hi.includes('dw2')) {
+      const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2 + (j - 1) * 12;
+      drawWeightLabel(mx, my, `w2${j+1}=${w.toFixed(3)}`);
+    }
+  }
+
+  // ── NEURÔNIOS DE ENTRADA ──
+  const inputLabels = ['x₁', 'x₂'];
+  const inputVals   = s.x ? s.x : [null, null];
+  for (let i = 0; i < 2; i++) {
+    const p = neuronPos(0, i);
+    const isHi = hi.includes('input');
+    const val = inputVals[i] !== null ? inputVals[i].toFixed(1) : '?';
+    drawNeuron(p, inputLabels[i], val, isHi ? 'forward' : 'default', 26);
+  }
+
+  // ── NEURÔNIOS OCULTOS ──
+  for (let j = 0; j < 3; j++) {
+    const p = neuronPos(1, j);
+    const hiA1 = hi.includes('a1');
+    const hiZ1 = hi.includes('z1');
+    const hiDH = hi.includes('dh');
+    const isHi = hiA1 || hiZ1 || hiDH;
+    const type = hiDH ? 'backward' : (isHi ? 'forward' : 'default');
+    let val = '?';
+    if (s.a1 && hiA1) val = s.a1[j].toFixed(3);
+    else if (s.z1 && hiZ1) val = s.z1[j].toFixed(3);
+    else if (s.d_z1 && hiDH) val = 'δ='+s.d_z1[j].toFixed(3);
+    else if (s.a1) val = s.a1[j] !== undefined ? s.a1[j].toFixed(3) : '?';
+    drawNeuron(p, `h${j+1}`, val, type, 28);
+  }
+
+  // ── NEURÔNIO DE SAÍDA ──
+  {
+    const p = neuronPos(2, 0);
+    const hiOut  = hi.includes('out');
+    const hiDout = hi.includes('dout');
+    const isHi   = hiOut || hiDout;
+    const type   = hiDout ? 'backward' : (isHi ? 'forward' : 'default');
+    let val = '?';
+    if (s.yhat !== undefined && (hiOut || hi.includes('loss') || hi.includes('dout') || hi.includes('dw2') || hi.includes('update'))) {
+      val = hiDout ? 'δ='+s.d_zout.toFixed(3) : s.yhat.toFixed(3);
+    }
+    drawNeuron(p, 'ŷ', val, type, 28);
+  }
+
+  // ── LABELS DE CAMADA ──
+  ctx.font = '700 11px JetBrains Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#aaa';
+  LAYERS.forEach(l => {
+    ctx.fillText(l.label.toUpperCase(), l.x * W, H - 8);
+  });
+
+  // ── SETA DE DIREÇÃO BACKPROP ──
+  if (STEP_INFO[currentStep].phase === 'backward' || STEP_INFO[currentStep].phase === 'update') {
+    ctx.save();
+    ctx.strokeStyle = '#2a6dd4';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(W * 0.85, 18);
+    ctx.lineTo(W * 0.15, 18);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // arrowhead
+    ctx.fillStyle = '#2a6dd4';
+    ctx.beginPath();
+    ctx.moveTo(W * 0.14, 18);
+    ctx.lineTo(W * 0.18, 13);
+    ctx.lineTo(W * 0.18, 23);
+    ctx.closePath();
+    ctx.fill();
+    ctx.font = '600 10px JetBrains Mono, monospace';
+    ctx.fillStyle = '#2a6dd4';
+    ctx.textAlign = 'center';
+    ctx.fillText('← BACKWARD', W * 0.5, 14);
+    ctx.restore();
+  } else if (STEP_INFO[currentStep].phase === 'forward') {
+    ctx.save();
+    ctx.strokeStyle = '#d45a2a';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(W * 0.15, 18);
+    ctx.lineTo(W * 0.85, 18);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#d45a2a';
+    ctx.beginPath();
+    ctx.moveTo(W * 0.86, 18);
+    ctx.lineTo(W * 0.82, 13);
+    ctx.lineTo(W * 0.82, 23);
+    ctx.closePath();
+    ctx.fill();
+    ctx.font = '600 10px JetBrains Mono, monospace';
+    ctx.fillStyle = '#d45a2a';
+    ctx.textAlign = 'center';
+    ctx.fillText('FORWARD →', W * 0.5, 14);
+    ctx.restore();
+  }
+}
+
+function drawConnection(p0, p1, weight, type) {
+  const absW = Math.abs(weight);
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(p0.x, p0.y);
+  ctx.lineTo(p1.x, p1.y);
+  if (type === 'forward')  { ctx.strokeStyle = `rgba(212,90,42,${0.3 + absW * 0.5})`; ctx.lineWidth = 1 + absW * 2; }
+  else if (type === 'backward') { ctx.strokeStyle = `rgba(42,109,212,${0.3 + absW * 0.5})`; ctx.lineWidth = 1 + absW * 2; }
+  else { ctx.strokeStyle = `rgba(180,174,162,${0.2 + absW * 0.4})`; ctx.lineWidth = 0.8 + absW * 1.5; }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawWeightLabel(x, y, text) {
+  ctx.save();
+  ctx.font = '600 9px JetBrains Mono, monospace';
+  ctx.textAlign = 'center';
+  const tw = ctx.measureText(text).width + 6;
+  ctx.fillStyle = 'rgba(255,254,249,0.92)';
+  ctx.fillRect(x - tw/2, y - 8, tw, 13);
+  ctx.fillStyle = '#555';
+  ctx.fillText(text, x, y + 2);
+  ctx.restore();
+}
+
+function drawNeuron(p, label, val, type, r) {
+  ctx.save();
+  // shadow
+  ctx.shadowColor = 'rgba(0,0,0,0.12)';
+  ctx.shadowBlur  = 8;
+  ctx.shadowOffsetY = 2;
+
+  // fill
+  let fill = '#fff', stroke = '#c8c2b4', textCol = '#1a1814';
+  if (type === 'forward')  { fill = '#fff3ee'; stroke = '#d45a2a'; }
+  if (type === 'backward') { fill = '#eef3ff'; stroke = '#2a6dd4'; }
+  if (type === 'update')   { fill = '#eefff3'; stroke = '#2aa858'; }
+
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = type !== 'default' ? 2.5 : 1.5;
+  ctx.stroke();
+
+  // label
+  ctx.font = `700 ${r > 26 ? 11 : 10}px JetBrains Mono, monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = type === 'forward' ? '#d45a2a' : (type === 'backward' ? '#2a6dd4' : '#555');
+  ctx.fillText(label, p.x, p.y - 6);
+
+  // value
+  ctx.font = `400 9px JetBrains Mono, monospace`;
+  ctx.fillStyle = textCol;
+  ctx.fillText(val, p.x, p.y + 7);
+  ctx.restore();
+}
+
+// ══════════════════════════════════════
+//  LOSS CHART
+// ══════════════════════════════════════
+const lossCanvas = document.getElementById('lossCanvas');
+const lctx = lossCanvas.getContext('2d');
+
+function drawLossChart() {
+  const W = lossCanvas.width = lossCanvas.parentElement.clientWidth - 32;
+  const H = lossCanvas.height = 80;
+  lctx.clearRect(0, 0, W, H);
+  lctx.fillStyle = '#f5f3ee';
+  lctx.fillRect(0, 0, W, H);
+
+  if (lossHistory.length < 2) {
+    lctx.font = '10px JetBrains Mono, monospace';
+    lctx.fillStyle = '#aaa';
+    lctx.textAlign = 'center';
+    lctx.fillText('Loss aparecerá após Etapa 5', W/2, H/2);
+    return;
+  }
+
+  const pad = 8;
+  const maxL = Math.max(...lossHistory, 1);
+  const minL = 0;
+
+  lctx.strokeStyle = '#ddd';
+  lctx.lineWidth = 1;
+  lctx.beginPath();
+  lctx.moveTo(pad, H - pad);
+  lctx.lineTo(W - pad, H - pad);
+  lctx.stroke();
+
+  lctx.strokeStyle = '#d45a2a';
+  lctx.lineWidth = 2;
+  lctx.beginPath();
+  lossHistory.forEach((l, i) => {
+    const x = pad + (i / (lossHistory.length - 1)) * (W - 2*pad);
+    const y = H - pad - ((l - minL) / (maxL - minL)) * (H - 2*pad);
+    i === 0 ? lctx.moveTo(x, y) : lctx.lineTo(x, y);
+  });
+  lctx.stroke();
+
+  // último ponto
+  const lastX = W - pad;
+  const lastY = H - pad - ((lossHistory[lossHistory.length-1] - minL) / (maxL - minL)) * (H - 2*pad);
+  lctx.beginPath();
+  lctx.arc(lastX, lastY, 4, 0, Math.PI*2);
+  lctx.fillStyle = '#d45a2a';
+  lctx.fill();
+
+  lctx.font = '9px JetBrains Mono, monospace';
+  lctx.fillStyle = '#888';
+  lctx.textAlign = 'left';
+  lctx.fillText(`L=${lossHistory[lossHistory.length-1].toFixed(4)}`, pad, 12);
+}
+
+// ══════════════════════════════════════
+//  ATUALIZAÇÃO DA UI
+// ══════════════════════════════════════
+function updateUI() {
+  compute();
+  const s = state;
+  const info = STEP_INFO[currentStep];
+
+  // Progresso
+  document.getElementById('progressFill').style.width = ((currentStep / TOTAL_STEPS) * 100) + '%';
+  document.getElementById('stepLabel').textContent = `Etapa ${currentStep} de ${TOTAL_STEPS}`;
+  document.getElementById('epochInfo').textContent  = `Época ${epochCount}`;
+
+  // Tag de fase
+  const tagEl = document.getElementById('phaseTag');
+  tagEl.textContent = info.tag;
+  tagEl.className = 'phase-tag';
+  if (info.phase === 'forward')  tagEl.classList.add('phase-forward');
+  if (info.phase === 'backward') tagEl.classList.add('phase-backward');
+  if (info.phase === 'update')   tagEl.classList.add('phase-update');
+  if (info.phase === 'init')     tagEl.classList.add('phase-result');
+
+  // Explicação
+  document.getElementById('explainStepNum').textContent = info.title;
+  document.getElementById('explainText').innerHTML = info.text;
+
+  // Botões
+  document.getElementById('btnPrev').disabled = currentStep === 0;
+  document.getElementById('btnNext').disabled = currentStep === TOTAL_STEPS;
+  document.getElementById('btnNext').textContent = currentStep === TOTAL_STEPS ? '✓ Concluído' : 'Próximo →';
+
+  // ── PAINEL MATH ──
+  const { x, y } = SAMPLES[sampleIdx];
+  document.getElementById('mf-input').textContent  = `x₁ = ${x[0]} , x₂ = ${x[1]}`;
+  document.getElementById('mf-target').textContent = `y_real = ${y}`;
+
+  if (s.z1) {
+    document.getElementById('mv-z1').innerHTML =
+      s.z1.map((z, j) => `<b>z${j+1} = ${z.toFixed(5)}</b>`).join(' &nbsp; ');
+  }
+  if (s.a1) {
+    document.getElementById('mv-a1').innerHTML =
+      s.a1.map((a, j) => `<b>a${j+1} = ${a.toFixed(5)}</b>`).join(' &nbsp; ');
+  }
+  if (s.yhat !== undefined) {
+    document.getElementById('mv-out').innerHTML =
+      `z_out = <b>${s.z_out.toFixed(5)}</b> &nbsp; ŷ = <b>${s.yhat.toFixed(5)}</b>`;
+  }
+  if (s.loss !== undefined) {
+    document.getElementById('mv-loss').innerHTML = `L = <b>${s.loss.toFixed(6)}</b>`;
+  }
+  if (s.d_zout !== undefined) {
+    document.getElementById('mv-dout').innerHTML =
+      `δ_out = ŷ − y = <b>${s.d_zout.toFixed(5)}</b>`;
+  }
+  if (s.dW2) {
+    document.getElementById('mv-dw2').innerHTML =
+      s.dW2.map((dw, j) => `<b>∂L/∂w2${j+1} = ${dw.toFixed(5)}</b>`).join(' &nbsp; ');
+  }
+  if (s.d_z1) {
+    document.getElementById('mv-dh').innerHTML =
+      s.d_z1.map((d, j) => `<b>δ${j+1} = ${d.toFixed(5)}</b>`).join(' &nbsp; ');
+  }
+  if (s.dW1) {
+    document.getElementById('mv-dw1').innerHTML =
+      s.dW1.map((row, j) =>
+        row.map((dw, i) => `<b>∂L/∂w1${i+1}${j+1}=${dw.toFixed(4)}</b>`).join(' ')
+      ).join(' &nbsp; ');
+  }
+  if (currentStep === TOTAL_STEPS) {
+    document.getElementById('mv-upd').innerHTML =
+      `α = ${LR} &nbsp; | &nbsp; Pesos atualizados! Ver aba PESOS.`;
+  }
+
+  // Highlight dos math-cards
+  const cardMap = {
+    'input':  ['mc-input'],
+    'z1':     ['mc-z1'],
+    'a1':     ['mc-a1'],
+    'out':    ['mc-out'],
+    'loss':   ['mc-loss'],
+    'dout':   ['mc-dout'],
+    'dw2':    ['mc-dw2'],
+    'dh':     ['mc-dh'],
+    'dw1':    ['mc-dw1'],
+    'update': ['mc-upd'],
+    'w1':     ['mc-z1'],
+    'w2':     ['mc-dw2', 'mc-out'],
+  };
+
+  document.querySelectorAll('.math-card').forEach(c => {
+    c.classList.remove('highlighted');
+    c.classList.remove('backward');
+    c.classList.remove('update');
+  });
+
+  info.highlight.forEach(h => {
+    (cardMap[h] || []).forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.add('highlighted');
+      if (info.phase === 'backward') el.classList.add('backward');
+      if (info.phase === 'update')   el.classList.add('update');
+    });
+  });
+
+  // Aba Pesos
+  renderWeightsTab(currentStep === TOTAL_STEPS);
+
+  // Loss chart
+  if (s.loss !== undefined) {
+    if (lossHistory.length === 0 || currentStep === TOTAL_STEPS) {
+      // não duplicar
+    }
+    if (currentStep >= 5 && currentStep < TOTAL_STEPS) {
+      if (lossHistory.length < epochCount) lossHistory.push(s.loss);
+    }
+  }
+  drawLossChart();
+
+  // Canvas da rede
+  drawNet();
+}
+
+// ══════════════════════════════════════
+//  ABA PESOS
+// ══════════════════════════════════════
+function renderWeightsTab(showDelta) {
+  const g1 = document.getElementById('w1-grid');
+  const g2 = document.getElementById('w2-grid');
+  const gb = document.getElementById('bias-grid');
+  g1.innerHTML = '';
+  g2.innerHTML = '';
+  gb.innerHTML = '';
+
+  for (let j = 0; j < 3; j++) {
+    for (let i = 0; i < 2; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'weight-cell' + (showDelta ? ' changed' : '');
+      const dw = state.dW1 ? state.dW1[j][i] : null;
+      const newW = dw !== null ? (W1[j][i] - LR * dw) : null;
+      cell.innerHTML = `
+        <div class="w-label">w1_${i+1}${j+1} (x${i+1}→h${j+1})</div>
+        <div class="w-val">${W1[j][i].toFixed(5)}</div>
+        ${showDelta && dw !== null ? `<div class="w-delta ${-LR*dw >= 0 ? 'pos' : 'neg'}">→ ${newW.toFixed(5)} (Δ${(-LR*dw).toFixed(5)})</div>` : ''}
+      `;
+      g1.appendChild(cell);
+    }
+  }
+
+  for (let j = 0; j < 3; j++) {
+    const cell = document.createElement('div');
+    cell.className = 'weight-cell' + (showDelta ? ' changed' : '');
+    const dw = state.dW2 ? state.dW2[j] : null;
+    const newW = dw !== null ? (W2[j] - LR * dw) : null;
+    cell.innerHTML = `
+      <div class="w-label">w2_${j+1} (h${j+1}→ŷ)</div>
+      <div class="w-val">${W2[j].toFixed(5)}</div>
+      ${showDelta && dw !== null ? `<div class="w-delta ${-LR*dw >= 0 ? 'pos' : 'neg'}">→ ${newW.toFixed(5)} (Δ${(-LR*dw).toFixed(5)})</div>` : ''}
+    `;
+    g2.appendChild(cell);
+  }
+
+  // Biases
+  ['b1','b2','b3'].forEach((name, j) => {
+    const cell = document.createElement('div');
+    const dw = state.db1 ? state.db1[j] : null;
+    const newB = dw !== null ? (b1[j] - LR * dw) : null;
+    cell.className = 'weight-cell' + (showDelta ? ' changed' : '');
+    cell.innerHTML = `
+      <div class="w-label">${name} (oculta ${j+1})</div>
+      <div class="w-val">${b1[j].toFixed(5)}</div>
+      ${showDelta && dw !== null ? `<div class="w-delta ${-LR*dw >= 0 ? 'pos' : 'neg'}">→ ${newB.toFixed(5)} (Δ${(-LR*dw).toFixed(5)})</div>` : ''}
+    `;
+    gb.appendChild(cell);
+  });
+
+  const bcell = document.createElement('div');
+  const dw2 = state.db2 !== undefined ? state.db2 : null;
+  const newB2 = dw2 !== null ? (b2 - LR * dw2) : null;
+  bcell.className = 'weight-cell' + (showDelta ? ' changed' : '');
+  bcell.innerHTML = `
+    <div class="w-label">b_out (saída)</div>
+    <div class="w-val">${b2.toFixed(5)}</div>
+    ${showDelta && dw2 !== null ? `<div class="w-delta ${-LR*dw2 >= 0 ? 'pos' : 'neg'}">→ ${newB2.toFixed(5)} (Δ${(-LR*dw2).toFixed(5)})</div>` : ''}
+  `;
+  gb.appendChild(bcell);
+}
+
+// ══════════════════════════════════════
+//  NAVEGAÇÃO
+// ══════════════════════════════════════
+function nextStep() {
+  if (currentStep < TOTAL_STEPS) {
+    currentStep++;
+    if (currentStep === TOTAL_STEPS) applyUpdate();
+    updateUI();
+  }
+}
+
+function prevStep() {
+  if (currentStep > 0) {
+    if (currentStep === TOTAL_STEPS) undoUpdate();
+    currentStep--;
+    updateUI();
+  }
+}
+
+function applyUpdate() {
+  compute(); // garante gradientes frescos
+  W1 = W1.map((row, j) => row.map((w, i) => w - LR * state.dW1[j][i]));
+  W2 = W2.map((w, j) => w - LR * state.dW2[j]);
+  b1 = b1.map((b, j) => b - LR * state.db1[j]);
+  b2 = b2 - LR * state.db2;
+  lossHistory.push(state.loss);
+  epochCount++;
+}
+
+// Guardamos pesos antes de update para poder voltar
+let W1_before, W2_before, b1_before, b2_before;
+
+function applyUpdate() {
+  compute();
+  W1_before = JSON.parse(JSON.stringify(W1));
+  W2_before = [...W2];
+  b1_before = [...b1];
+  b2_before = b2;
+  W1 = W1.map((row, j) => row.map((w, i) => w - LR * state.dW1[j][i]));
+  W2 = W2.map((w, j) => w - LR * state.dW2[j]);
+  b1 = b1.map((b, j) => b - LR * state.db1[j]);
+  b2 = b2 - LR * state.db2;
+  lossHistory.push(state.loss);
+  epochCount++;
+}
+
+function undoUpdate() {
+  if (W1_before) {
+    W1 = JSON.parse(JSON.stringify(W1_before));
+    W2 = [...W2_before];
+    b1 = [...b1_before];
+    b2 = b2_before;
+    lossHistory.pop();
+    epochCount--;
+  }
+}
+
+function setSample(idx) {
+  sampleIdx = idx;
+  document.querySelectorAll('.sample-btn').forEach((b, i) => {
+    b.classList.toggle('active', i === idx);
+  });
+  resetAll();
+}
+
+function resetAll() {
+  currentStep = 0;
+  W1 = JSON.parse(JSON.stringify(W1_0));
+  b1 = [...b1_0];
+  W2 = [...W2_0];
+  b2 = b2_0;
+  W1_before = null;
+  lossHistory = [];
+  epochCount = 1;
+  compute();
+  updateUI();
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.side-tab').forEach((t, i) => {
+    const names = ['explain', 'math', 'weights'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => {
+    c.classList.toggle('active', c.id === `tab-${name}`);
+  });
+}
+
+// ══════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════
+window.addEventListener('resize', () => { resizeCanvas(); drawLossChart(); });
+resizeCanvas();
+resetAll();
+</script>
+</body>
+</html>

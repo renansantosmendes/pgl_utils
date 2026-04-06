@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Descida da Montanha — Otimizadores</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f1a;
+    --surface: #151829;
+    --border: #252a40;
+    --text: #e8ecf5;
+    --muted: #6b7399;
+    --gd-color: #ff6b6b;
+    --adam-color: #4ecdc4;
+    --rms-color: #ffe66d;
+    --accent: #a78bfa;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── TELA INICIAL ── */
+  #screen-intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+    gap: 2.5rem;
+    background: radial-gradient(ellipse at 50% 0%, #1a1040 0%, var(--bg) 70%);
+  }
+
+  .title-block {
+    text-align: center;
+  }
+
+  .title-block h1 {
+    font-size: clamp(2.2rem, 6vw, 4rem);
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .title-block p {
+    margin-top: .8rem;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: .85rem;
+    letter-spacing: .05em;
+  }
+
+  .characters-row {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .char-card {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 1.6rem 1.4rem;
+    width: 220px;
+    cursor: pointer;
+    transition: transform .2s, border-color .2s, box-shadow .2s;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .char-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity .3s;
+    border-radius: 14px;
+  }
+
+  .char-card.gd::before  { background: radial-gradient(circle at 50% 0%, rgba(255,107,107,.15), transparent 70%); }
+  .char-card.adam::before { background: radial-gradient(circle at 50% 0%, rgba(78,205,196,.15), transparent 70%); }
+  .char-card.rms::before  { background: radial-gradient(circle at 50% 0%, rgba(255,230,109,.15), transparent 70%); }
+
+  .char-card:hover::before { opacity: 1; }
+  .char-card:hover { transform: translateY(-6px); }
+  .char-card.gd:hover  { border-color: var(--gd-color);  box-shadow: 0 12px 32px rgba(255,107,107,.25); }
+  .char-card.adam:hover { border-color: var(--adam-color); box-shadow: 0 12px 32px rgba(78,205,196,.25); }
+  .char-card.rms:hover  { border-color: var(--rms-color);  box-shadow: 0 12px 32px rgba(255,230,109,.25); }
+
+  .char-card.selected.gd  { border-color: var(--gd-color);  box-shadow: 0 0 0 4px rgba(255,107,107,.3); }
+  .char-card.selected.adam { border-color: var(--adam-color); box-shadow: 0 0 0 4px rgba(78,205,196,.3); }
+  .char-card.selected.rms  { border-color: var(--rms-color);  box-shadow: 0 0 0 4px rgba(255,230,109,.3); }
+
+  .char-avatar {
+    font-size: 3rem;
+    margin-bottom: .6rem;
+    display: block;
+  }
+
+  .char-name {
+    font-size: 1.3rem;
+    font-weight: 800;
+  }
+
+  .char-fullname {
+    font-family: 'Space Mono', monospace;
+    font-size: .62rem;
+    color: var(--muted);
+    margin: .2rem 0 .8rem;
+    letter-spacing: .05em;
+  }
+
+  .char-desc {
+    font-size: .8rem;
+    color: #9aa3c7;
+    line-height: 1.5;
+  }
+
+  .gd   .char-name { color: var(--gd-color); }
+  .adam .char-name { color: var(--adam-color); }
+  .rms  .char-name { color: var(--rms-color); }
+
+  .btn-start {
+    background: var(--accent);
+    color: #0d0f1a;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: .05em;
+    border: none;
+    border-radius: 10px;
+    padding: .9rem 2.8rem;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s, opacity .2s;
+    opacity: .4;
+    pointer-events: none;
+  }
+
+  .btn-start.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .btn-start.active:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(167,139,250,.4);
+  }
+
+  /* ── TELA DE JOGO ── */
+  #screen-game {
+    display: none;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .game-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .8rem 1.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: .5rem;
+  }
+
+  .game-header .char-badge {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    font-weight: 700;
+    font-size: 1rem;
+  }
+
+  .game-header .char-badge span.dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .stat-row {
+    display: flex;
+    gap: 1.2rem;
+    font-family: 'Space Mono', monospace;
+    font-size: .75rem;
+    color: var(--muted);
+    flex-wrap: wrap;
+  }
+
+  .stat-row span b {
+    color: var(--text);
+    font-size: .85rem;
+  }
+
+  .btn-reset {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: .8rem;
+    padding: .4rem .9rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color .2s, color .2s;
+  }
+  .btn-reset:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── CANVAS AREA ── */
+  .canvas-wrap {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    min-height: 320px;
+    max-height: 440px;
+  }
+
+  #gameCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ── CONTROLES ── */
+  .controls-panel {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 1.2rem 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem 2rem;
+  }
+
+  @media (max-width: 600px) {
+    .controls-panel { grid-template-columns: 1fr; }
+  }
+
+  .control-group label {
+    display: flex;
+    justify-content: space-between;
+    font-size: .78rem;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    margin-bottom: .4rem;
+  }
+
+  .control-group label b {
+    color: var(--text);
+  }
+
+  input[type=range] {
+    width: 100%;
+    accent-color: var(--accent);
+    height: 4px;
+    cursor: pointer;
+  }
+
+  .action-buttons {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: .8rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-action {
+    flex: 1;
+    min-width: 120px;
+    padding: .75rem 1rem;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: .85rem;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+  }
+
+  .btn-action:hover { transform: translateY(-2px); }
+
+  .btn-step {
+    background: var(--accent);
+    color: #0d0f1a;
+  }
+
+  .btn-step:hover { box-shadow: 0 6px 20px rgba(167,139,250,.4); }
+
+  .btn-auto {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  .btn-auto.running {
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+  }
+
+  /* ── LOG / FEEDBACK ── */
+  .log-panel {
+    background: #0a0c15;
+    border-top: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+    max-height: 160px;
+    overflow-y: auto;
+    font-family: 'Space Mono', monospace;
+    font-size: .72rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .log-panel .log-entry { color: var(--text); }
+  .log-panel .log-warn  { color: var(--rms-color); }
+  .log-panel .log-good  { color: var(--adam-color); }
+
+  /* ── MODAL WIN ── */
+  #modal-win {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.75);
+    backdrop-filter: blur(6px);
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+
+  #modal-win.show { display: flex; }
+
+  .modal-box {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    animation: popIn .35s cubic-bezier(.34,1.56,.64,1);
+  }
+
+  @keyframes popIn {
+    from { transform: scale(.7); opacity: 0; }
+    to   { transform: scale(1);  opacity: 1; }
+  }
+
+  .modal-box h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: .5rem;
+  }
+
+  .modal-box p {
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: .8rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+
+  .modal-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .8rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .mstat {
+    background: #0d0f1a;
+    border-radius: 10px;
+    padding: .8rem;
+  }
+
+  .mstat .val {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--accent);
+  }
+
+  .mstat .lbl {
+    font-family: 'Space Mono', monospace;
+    font-size: .65rem;
+    color: var(--muted);
+    margin-top: .2rem;
+  }
+
+  .btn-again {
+    background: var(--accent);
+    color: #0d0f1a;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: .95rem;
+    border: none;
+    border-radius: 10px;
+    padding: .85rem 2.2rem;
+    cursor: pointer;
+    transition: transform .15s;
+  }
+  .btn-again:hover { transform: scale(1.04); }
+
+  /* ── TOOLTIP TEORIA ── */
+  .theory-bar {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: .9rem 1.5rem;
+    font-size: .78rem;
+    color: #9aa3c7;
+    line-height: 1.6;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .theory-bar b { color: var(--text); }
+
+</style>
+</head>
+<body>
+
+<!-- ════════════════ TELA INICIAL ════════════════ -->
+<div id="screen-intro">
+  <div class="title-block">
+    <h1>Descida<br>da Montanha</h1>
+    <p>// um jogo sobre otimizadores de gradiente</p>
+  </div>
+
+  <div class="characters-row">
+    <div class="char-card gd" onclick="selectChar('gd')">
+      <span class="char-avatar">🧑‍🦱</span>
+      <div class="char-name">Geraldinho</div>
+      <div class="char-fullname">Gradient Descent</div>
+      <div class="char-desc">Passo fixo, sempre na direção do declive mais íngreme. Simples e previsível — mas pode oscilar ou demorar demais.</div>
+    </div>
+
+    <div class="char-card adam" onclick="selectChar('adam')">
+      <span class="char-avatar">🧔</span>
+      <div class="char-name">Adão</div>
+      <div class="char-fullname">Adam Optimizer</div>
+      <div class="char-desc">Adapta o passo e usa momento. Combina memória de gradientes passados com escalonamento. Geralmente o mais rápido.</div>
+    </div>
+
+    <div class="char-card rms" onclick="selectChar('rms')">
+      <span class="char-avatar">👨‍🦳</span>
+      <div class="char-name">Raimundão</div>
+      <div class="char-fullname">RMSProp</div>
+      <div class="char-desc">Escala o passo pela magnitude recente dos gradientes. Evita passos gigantes em regiões planas e se estabiliza bem.</div>
+    </div>
+  </div>
+
+  <button class="btn-start" id="btnStart" onclick="startGame()">COMEÇAR A DESCIDA →</button>
+</div>
+
+<!-- ════════════════ TELA DE JOGO ════════════════ -->
+<div id="screen-game">
+
+  <div class="game-header">
+    <div class="char-badge">
+      <span class="dot" id="headerDot"></span>
+      <span id="headerName"></span>
+    </div>
+    <div class="stat-row">
+      <span>Passos: <b id="statSteps">0</b></span>
+      <span>Posição x: <b id="statX">—</b></span>
+      <span>f(x): <b id="statFx">—</b></span>
+      <span>Gradiente: <b id="statGrad">—</b></span>
+    </div>
+    <button class="btn-reset" onclick="goIntro()">← Trocar personagem</button>
+  </div>
+
+  <div class="canvas-wrap">
+    <canvas id="gameCanvas"></canvas>
+  </div>
+
+  <div class="controls-panel">
+    <div class="control-group">
+      <label>Learning Rate (α) <b id="lrVal">0.10</b></label>
+      <input type="range" id="sliderLR" min="0.01" max="1.0" step="0.01" value="0.10" oninput="updateLR(this.value)">
+    </div>
+    <div class="control-group" id="momentumGroup">
+      <label>Momentum (β₁) <b id="momVal">0.90</b></label>
+      <input type="range" id="sliderMom" min="0.5" max="0.99" step="0.01" value="0.90" oninput="updateMom(this.value)">
+    </div>
+    <div class="action-buttons">
+      <button class="btn-action btn-step" onclick="doStep()">▶ Um passo</button>
+      <button class="btn-action btn-auto" id="btnAuto" onclick="toggleAuto()">⏩ Automático</button>
+      <button class="btn-action btn-step" style="background:#252a40;color:var(--text);" onclick="resetPosition()">↺ Reiniciar posição</button>
+    </div>
+  </div>
+
+  <div class="theory-bar" id="theoryBar">
+    Escolha um personagem e ajuste o <b>learning rate</b> para começar.
+  </div>
+
+  <div class="log-panel" id="logPanel">
+    <div class="log-entry">// Log de otimização inicializado.</div>
+  </div>
+</div>
+
+<!-- ════════════════ MODAL WIN ════════════════ -->
+<div id="modal-win">
+  <div class="modal-box">
+    <h2 id="winEmoji">🎉</h2>
+    <h2 id="winTitle" style="margin-top:.3rem">Mínimo encontrado!</h2>
+    <p id="winDesc"></p>
+    <div class="modal-stats">
+      <div class="mstat"><div class="val" id="winSteps">—</div><div class="lbl">passos</div></div>
+      <div class="mstat"><div class="val" id="winFx">—</div><div class="lbl">f(x) final</div></div>
+      <div class="mstat"><div class="val" id="winLR">—</div><div class="lbl">learning rate</div></div>
+      <div class="mstat"><div class="val" id="winOscilou">—</div><div class="lbl">oscilações</div></div>
+    </div>
+    <button class="btn-again" onclick="resetAll()">Tentar novamente</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  ESTADO GLOBAL
+// ══════════════════════════════════════════════
+let selectedChar = null;
+let x = 0, lr = 0.10, momentum = 0.90;
+let steps = 0, oscillations = 0;
+let mGrad = 0, vGrad = 0; // Adam
+let emaGrad2 = 0;          // RMSProp
+let prevGrad = 0;
+let autoTimer = null;
+let isRunning = false;
+let lastX = null;
+const EPSILON = 1e-8;
+const BETA2 = 0.999;
+
+// ══════════════════════════════════════════════
+//  FUNÇÃO LOSS (montanha interessante)
+//  Tem mínimo global perto de x=0 e mínimos locais
+// ══════════════════════════════════════════════
+function f(x) {
+  return 0.3 * x * x + 2 * Math.sin(x * 1.5) + 0.5 * Math.cos(x * 4) * Math.exp(-0.05 * x * x);
+}
+
+function grad(x) {
+  const h = 1e-5;
+  return (f(x + h) - f(x - h)) / (2 * h);
+}
+
+// ══════════════════════════════════════════════
+//  CANVAS
+// ══════════════════════════════════════════════
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const X_MIN = -8, X_MAX = 8;
+let trail = [];
+
+function resize() {
+  const wrap = canvas.parentElement;
+  canvas.width  = wrap.clientWidth  * devicePixelRatio;
+  canvas.height = wrap.clientHeight * devicePixelRatio;
+  canvas.style.width  = wrap.clientWidth  + 'px';
+  canvas.style.height = wrap.clientHeight + 'px';
+  draw();
+}
+
+function xToCanvas(xv) {
+  return ((xv - X_MIN) / (X_MAX - X_MIN)) * canvas.width;
+}
+
+function yToCanvas(yv, yMin, yMax) {
+  const pad = 0.12;
+  const top = canvas.height * pad, bottom = canvas.height * (1 - pad * 0.7);
+  return top + (1 - (yv - yMin) / (yMax - yMin)) * (bottom - top);
+}
+
+function draw() {
+  if (!canvas.width) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // fundo gradiente
+  const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  bg.addColorStop(0, '#0a0c15');
+  bg.addColorStop(1, '#0d0f1a');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // precompute y range
+  const pts = 400;
+  const ys = [];
+  for (let i = 0; i <= pts; i++) {
+    const xv = X_MIN + (X_MAX - X_MIN) * i / pts;
+    ys.push(f(xv));
+  }
+  const yMin = Math.min(...ys) - 0.3;
+  const yMax = Math.max(...ys) + 0.3;
+
+  // grade horizontal sutil
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 5; i++) {
+    const yv = yMin + (yMax - yMin) * i / 5;
+    const cy = yToCanvas(yv, yMin, yMax);
+    ctx.beginPath();
+    ctx.moveTo(0, cy);
+    ctx.lineTo(canvas.width, cy);
+    ctx.stroke();
+  }
+
+  // eixo x
+  const axisY = yToCanvas(0, yMin, yMax);
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(0, axisY);
+  ctx.lineTo(canvas.width, axisY);
+  ctx.stroke();
+
+  // curva da montanha
+  ctx.beginPath();
+  for (let i = 0; i <= pts; i++) {
+    const xv = X_MIN + (X_MAX - X_MIN) * i / pts;
+    const cx = xToCanvas(xv);
+    const cy = yToCanvas(f(xv), yMin, yMax);
+    i === 0 ? ctx.moveTo(cx, cy) : ctx.lineTo(cx, cy);
+  }
+  const grad2 = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad2.addColorStop(0, 'rgba(167,139,250,0.9)');
+  grad2.addColorStop(1, 'rgba(78,205,196,0.4)');
+  ctx.strokeStyle = grad2;
+  ctx.lineWidth = 3 * devicePixelRatio;
+  ctx.stroke();
+
+  // preenchimento sob a curva
+  ctx.lineTo(xToCanvas(X_MAX), canvas.height);
+  ctx.lineTo(xToCanvas(X_MIN), canvas.height);
+  ctx.closePath();
+  const fill = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  fill.addColorStop(0, 'rgba(167,139,250,0.12)');
+  fill.addColorStop(1, 'rgba(13,15,26,0)');
+  ctx.fillStyle = fill;
+  ctx.fill();
+
+  // trilha
+  if (trail.length > 1) {
+    ctx.beginPath();
+    trail.forEach((pt, i) => {
+      const cx = xToCanvas(pt.x);
+      const cy = yToCanvas(pt.y, yMin, yMax);
+      i === 0 ? ctx.moveTo(cx, cy) : ctx.lineTo(cx, cy);
+    });
+    ctx.strokeStyle = charColor() + '88';
+    ctx.lineWidth = 2 * devicePixelRatio;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // 🍺 Brahma no mínimo global (perto de x ≈ 0)
+  const xMin = findGlobalMin();
+  const cxMin = xToCanvas(xMin);
+  const cyMin = yToCanvas(f(xMin), yMin, yMax);
+  ctx.font = `${22 * devicePixelRatio}px serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText('🍺🧊', cxMin, cyMin - 4 * devicePixelRatio);
+
+  // personagem atual
+  if (selectedChar) {
+    const cx = xToCanvas(x);
+    const cy = yToCanvas(f(x), yMin, yMax);
+
+    // aura
+    const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30 * devicePixelRatio);
+    glow.addColorStop(0, charColor() + '55');
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 30 * devicePixelRatio, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ponto
+    ctx.beginPath();
+    ctx.arc(cx, cy, 7 * devicePixelRatio, 0, Math.PI * 2);
+    ctx.fillStyle = charColor();
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2 * devicePixelRatio;
+    ctx.stroke();
+
+    // emoji personagem
+    ctx.font = `${18 * devicePixelRatio}px serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(charEmoji(), cx, cy - 16 * devicePixelRatio);
+
+    // label f(x)
+    ctx.font = `bold ${10 * devicePixelRatio}px 'Space Mono', monospace`;
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillText(`f(x)=${f(x).toFixed(3)}`, cx, cy + 22 * devicePixelRatio);
+  }
+
+  updateStats(yMin, yMax);
+}
+
+function findGlobalMin() {
+  let bestX = X_MIN, bestY = Infinity;
+  for (let i = 0; i <= 800; i++) {
+    const xv = X_MIN + (X_MAX - X_MIN) * i / 800;
+    const yv = f(xv);
+    if (yv < bestY) { bestY = yv; bestX = xv; }
+  }
+  return bestX;
+}
+
+function charColor() {
+  return { gd: '#ff6b6b', adam: '#4ecdc4', rms: '#ffe66d' }[selectedChar] || '#fff';
+}
+
+function charEmoji() {
+  return { gd: '🧑‍🦱', adam: '🧔', rms: '👨‍🦳' }[selectedChar] || '●';
+}
+
+// ══════════════════════════════════════════════
+//  SELEÇÃO DE PERSONAGEM
+// ══════════════════════════════════════════════
+function selectChar(c) {
+  selectedChar = c;
+  document.querySelectorAll('.char-card').forEach(el => el.classList.remove('selected'));
+  document.querySelector(`.char-card.${c}`).classList.add('selected');
+  document.getElementById('btnStart').classList.add('active');
+}
+
+function startGame() {
+  if (!selectedChar) return;
+
+  document.getElementById('screen-intro').style.display = 'none';
+  document.getElementById('screen-game').style.display = 'flex';
+  document.getElementById('screen-game').style.flexDirection = 'column';
+
+  // header
+  const colors = { gd: '#ff6b6b', adam: '#4ecdc4', rms: '#ffe66d' };
+  const names  = { gd: 'Geraldinho — Gradient Descent', adam: 'Adão — Adam Optimizer', rms: 'Raimundão — RMSProp' };
+  document.getElementById('headerDot').style.background = colors[selectedChar];
+  document.getElementById('headerName').textContent = names[selectedChar];
+
+  // mostrar/ocultar momentum
+  document.getElementById('momentumGroup').style.display = selectedChar === 'gd' ? 'none' : 'block';
+
+  resetPosition();
+  setTimeout(resize, 50);
+  updateTheory();
+}
+
+// ══════════════════════════════════════════════
+//  CONTROLES
+// ══════════════════════════════════════════════
+function updateLR(v) {
+  lr = parseFloat(v);
+  document.getElementById('lrVal').textContent = lr.toFixed(2);
+  updateTheory();
+}
+
+function updateMom(v) {
+  momentum = parseFloat(v);
+  document.getElementById('momVal').textContent = momentum.toFixed(2);
+  updateTheory();
+}
+
+function resetPosition() {
+  x = -6 + Math.random() * 0.5;
+  steps = 0; oscillations = 0;
+  mGrad = 0; vGrad = 0; emaGrad2 = 0; prevGrad = 0; lastX = null;
+  trail = [{ x, y: f(x) }];
+  stopAuto();
+  draw();
+  addLog(`↺ Posição reiniciada: x=${x.toFixed(3)}`, 'entry');
+}
+
+function goIntro() {
+  stopAuto();
+  document.getElementById('screen-game').style.display = 'none';
+  document.getElementById('screen-intro').style.display = 'flex';
+}
+
+// ══════════════════════════════════════════════
+//  PASSOS DOS OTIMIZADORES
+// ══════════════════════════════════════════════
+function doStep() {
+  if (!selectedChar) return;
+
+  const g = grad(x);
+  let dx = 0;
+
+  if (selectedChar === 'gd') {
+    dx = -lr * g;
+
+  } else if (selectedChar === 'adam') {
+    steps++; // t para bias correction
+    mGrad = momentum * mGrad + (1 - momentum) * g;
+    vGrad = BETA2 * vGrad + (1 - BETA2) * g * g;
+    const mHat = mGrad / (1 - Math.pow(momentum, steps));
+    const vHat = vGrad / (1 - Math.pow(BETA2, steps));
+    dx = -lr * mHat / (Math.sqrt(vHat) + EPSILON);
+
+  } else if (selectedChar === 'rms') {
+    emaGrad2 = momentum * emaGrad2 + (1 - momentum) * g * g;
+    dx = -lr * g / (Math.sqrt(emaGrad2) + EPSILON);
+  }
+
+  const xOld = x;
+  x += dx;
+  x = Math.max(X_MIN + 0.1, Math.min(X_MAX - 0.1, x));
+
+  if (lastX !== null && Math.sign(x - lastX) !== Math.sign(lastX - (trail.length > 1 ? trail[trail.length - 2].x : lastX))) {
+    oscillations++;
+  }
+  lastX = xOld;
+
+  trail.push({ x, y: f(x) });
+  if (trail.length > 200) trail.shift();
+
+  if (selectedChar !== 'adam') steps++;
+
+  logStep(g, dx);
+  draw();
+  checkWin();
+}
+
+function logStep(g, dx) {
+  const fv = f(x);
+  let cls = 'entry';
+  let msg = `Passo ${steps}: x=${x.toFixed(4)} | f(x)=${fv.toFixed(4)} | ∇=${g.toFixed(4)} | Δx=${dx.toFixed(5)}`;
+
+  if (Math.abs(dx) > 1.5) {
+    cls = 'log-warn';
+    msg += ' ⚠ passo muito grande!';
+  } else if (Math.abs(fv) < 0.15) {
+    cls = 'log-good';
+    msg += ' ✓ perto do mínimo!';
+  }
+
+  addLog(msg, cls);
+  updateStats();
+}
+
+function updateStats() {
+  document.getElementById('statSteps').textContent = steps;
+  document.getElementById('statX').textContent = x.toFixed(4);
+  document.getElementById('statFx').textContent = f(x).toFixed(4);
+  document.getElementById('statGrad').textContent = grad(x).toFixed(5);
+}
+
+function addLog(msg, cls = '') {
+  const panel = document.getElementById('logPanel');
+  const div = document.createElement('div');
+  div.className = cls;
+  div.textContent = msg;
+  panel.appendChild(div);
+  panel.scrollTop = panel.scrollHeight;
+  if (panel.children.length > 120) panel.removeChild(panel.firstChild);
+}
+
+// ══════════════════════════════════════════════
+//  AUTOMÁTICO
+// ══════════════════════════════════════════════
+function toggleAuto() {
+  if (isRunning) stopAuto();
+  else startAuto();
+}
+
+function startAuto() {
+  isRunning = true;
+  document.getElementById('btnAuto').textContent = '⏹ Parar';
+  document.getElementById('btnAuto').classList.add('running');
+  autoTimer = setInterval(() => {
+    doStep();
+    if (Math.abs(grad(x)) < 0.002) stopAuto();
+  }, 120);
+}
+
+function stopAuto() {
+  isRunning = false;
+  clearInterval(autoTimer);
+  document.getElementById('btnAuto').textContent = '⏩ Automático';
+  document.getElementById('btnAuto').classList.remove('running');
+}
+
+// ══════════════════════════════════════════════
+//  VERIFICAÇÃO DE VITÓRIA
+// ══════════════════════════════════════════════
+function checkWin() {
+  const globalMinX = findGlobalMin();
+  const distToMin = Math.abs(x - globalMinX);
+  // só vence se estiver a menos de 0.3 do mínimo global
+  if (distToMin < 0.3 && steps > 3) {
+    stopAuto();
+    setTimeout(showWin, 400);
+  }
+}
+
+function showWin() {
+  const descs = {
+    gd:   `O Geraldinho chegou no mínimo global com ${steps} passos usando lr=${lr.toFixed(2)}. Com learning rate alto, ele oscila; baixo, demora. Sem memória — só o gradiente atual importa.`,
+    adam: `O Adão encontrou o mínimo global em ${steps} passos. A correção de bias e o momentum adaptativo tornaram a descida mais estável. Um dos otimizadores mais populares em deep learning.`,
+    rms:  `O Raimundão convergiu no mínimo global em ${steps} passos. Ao escalar o gradiente pela média dos quadrados recentes, ele evita passos gigantes em regiões com gradientes altos.`,
+  };
+
+  document.getElementById('winTitle').textContent = 'Chegou na Heineken gelada! 🍺🧊';
+  document.getElementById('winDesc').textContent = descs[selectedChar];
+  document.getElementById('winSteps').textContent = steps;
+  document.getElementById('winFx').textContent = f(x).toFixed(4);
+  document.getElementById('winLR').textContent = lr.toFixed(2);
+  document.getElementById('winOscilou').textContent = oscillations;
+  document.getElementById('modal-win').classList.add('show');
+}
+
+function resetAll() {
+  document.getElementById('modal-win').classList.remove('show');
+  resetPosition();
+}
+
+// ══════════════════════════════════════════════
+//  TEORIA CONTEXTUAL
+// ══════════════════════════════════════════════
+function updateTheory() {
+  const bar = document.getElementById('theoryBar');
+  const theories = {
+    gd:  `<b>Gradient Descent:</b> Δx = −α · ∇f(x). Learning rate α = <b>${lr.toFixed(2)}</b>. ${lr > 0.5 ? '⚠ α alto → risco de divergir ou oscilar.' : lr < 0.05 ? '⚠ α baixo → convergência lenta.' : '✓ α razoável para este terreno.'}`,
+    adam:`<b>Adam:</b> usa momento m̂ e variância v̂ adaptativos. Δx = −α · m̂/(√v̂ + ε). β₁ = <b>${momentum.toFixed(2)}</b>. Momento alto acelera, mas pode ultrapassar o mínimo.`,
+    rms: `<b>RMSProp:</b> Δx = −α · ∇f / √(E[g²] + ε). β = <b>${momentum.toFixed(2)}</b>. Escala o passo pela média exponencial de g², estabilizando regiões com gradientes grandes.`,
+  };
+  bar.innerHTML = theories[selectedChar] || bar.innerHTML;
+}
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+window.addEventListener('resize', resize);
+resize();
+</script>
+</body>
+</html>
