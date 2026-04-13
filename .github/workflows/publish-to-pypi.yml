@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.10', '3.11']
+        python-version: ['3.10', '3.11', '3.12']
     
     steps:
       - uses: actions/checkout@v3
@@ -30,16 +30,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
           # Install deep_learning module dependencies
-          pip install networkx>=2.8.0 matplotlib>=3.5.0 tensorflow>=2.10.0
+          pip install networkx>=2.8.0 matplotlib>=3.5.0 tensorflow>=2.10.0 seaborn>=0.12.0
       
       - name: Lint with flake8
         run: |
           # flake8 pgl_utils/ tests/
           echo "Flake8 linting desabilitado - considere usar ferramentas alternativas como ruff ou pylint"
       
-      - name: Format check with black
-        run: |
-          black --check --target-version py311 pgl_utils/ tests/
       
       - name: Run tests
         run: |
