@@ -14,8 +14,9 @@ The project uses **GitHub Actions** to:
 ### 1. `tests.yml` - Continuous Testing
 - Runs on every **push** and **pull request**
 - Tests on multiple OS: Ubuntu, Windows, macOS
-- Tests on Python versions: 3.8, 3.9, 3.10, 3.11
-- Checks code style with black and flake8
+- Tests on Python versions: 3.10, 3.11
+- Checks code style with black
+<!-- - flake8 linting foi desabilitado -->
 - Runs type checking with mypy
 - Uploads coverage reports to Codecov
 
@@ -86,11 +87,11 @@ Steps:
 2. Set up Python
 3. Cache pip packages
 4. Install dev dependencies
-5. Lint with flake8
-6. Format check with black
-7. Type check with mypy
-8. Run tests with pytest
-9. Upload coverage to Codecov
+5. Format check with black
+<!-- 5. Lint with flake8 (desabilitado) -->
+6. Type check with mypy
+7. Run tests with pytest
+8. Upload coverage to Codecov
 
 ### Publishing Workflow (`publish-to-pypi.yml`)
 
@@ -168,7 +169,7 @@ pytest tests/
 ### Check code style
 ```bash
 black --check post_graduation_utils/ tests/
-flake8 post_graduation_utils/ tests/
+# flake8 post_graduation_utils/ tests/  # Desabilitado
 ```
 
 ### Fix style issues

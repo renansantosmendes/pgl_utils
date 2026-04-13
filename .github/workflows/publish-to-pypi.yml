@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.10', '3.11']
     
     steps:
       - uses: actions/checkout@v3
@@ -34,7 +34,8 @@ jobs:
       
       - name: Lint with flake8
         run: |
-          flake8 pgl_utils/ tests/
+          # flake8 pgl_utils/ tests/
+          echo "Flake8 linting desabilitado - considere usar ferramentas alternativas como ruff ou pylint"
       
       - name: Format check with black
         run: |

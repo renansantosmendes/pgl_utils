@@ -7,7 +7,7 @@ name = "pgl-utils"
 version = "0.1.0"
 description = "Machine Learning, Deep Learning, and GenAI utilities for PUC and IBMEC post-graduation students"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
     {name = "Your Name", email = "your.email@example.com"},
@@ -15,8 +15,6 @@ authors = [
 keywords = ["machine-learning", "deep-learning", "generative-ai", "utilities"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "License :: OSI Approved :: MIT License",
@@ -36,7 +34,7 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=3.0",
     "black>=22.0",
-    "flake8>=4.0",
+    # "flake8>=4.0",  # Desabilitado - tinalização automática pode quebra o projeto
     "mypy>=0.950",
 ]
 

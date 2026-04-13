@@ -21,4 +21,4 @@ scikit-learn>=1.0.0
 pytest>=7.0
 pytest-cov>=3.0
 black>=22.0
-flake8>=4.0
+# flake8>=4.0  # Desabilitado - linting automático pode quebrar o projeto

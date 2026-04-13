@@ -51,7 +51,7 @@ post_graduation_utils/
 ├── 📄 pyproject.toml                  # Modern Python project config
 ├── 📄 requirements.txt                # Dependencies list
 ├── 📄 pytest.ini                      # Pytest configuration
-├── 📄 .flake8                         # Code style configuration
+<!-- ├── 📄 .flake8                         # Code style configuration (desabilitado) -->
 ├── 📄 .gitignore                      # Git ignore rules
 ├── 📄 README.md                       # Main documentation
 ├── 📄 STUDENT_README.md               # Student-friendly guide
@@ -121,7 +121,7 @@ post_graduation_utils/
 | `CONTRIBUTING.md` | How to contribute |
 | `.gitignore` | Git exclusion rules |
 | `pytest.ini` | Test configuration |
-| `.flake8` | Code style configuration |
+<!-- | `.flake8` | Code style configuration (desabilitado) | -->
 
 ---
 
@@ -246,7 +246,7 @@ ibmec_info = config.IBMECConfig.get_info()
 5. **Format code**
    ```bash
    black post_graduation_utils/
-   flake8 post_graduation_utils/
+   # flake8 post_graduation_utils/  # Desabilitado
    ```
 
 6. **Submit PR**
@@ -261,7 +261,7 @@ ibmec_info = config.IBMECConfig.get_info()
 | Install with ML | `pip install "post-graduation-utils[ml]"` |
 | Run tests | `pytest tests/` |
 | Format code | `black post_graduation_utils/` |
-| Check style | `flake8 post_graduation_utils/` |
+<!-- | Check style | `flake8 post_graduation_utils/` | -->
 | Build package | `python setup.py sdist bdist_wheel` |
 | Upload to PyPI | `twine upload dist/*` |
 

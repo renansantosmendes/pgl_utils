@@ -44,11 +44,13 @@ Use black for formatting:
 black post_graduation_utils/
 ```
 
-Check with flake8:
+<!-- Check with flake8:
 
 ```bash
 flake8 post_graduation_utils/
 ```
+
+Note: Flake8 linting foi desabilitado. Considere usar ferramentas alternativas como ruff ou pylint. -->
 
 ### 6. Submit a Pull Request
 
