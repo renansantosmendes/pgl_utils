@@ -39,7 +39,7 @@ jobs:
       
       - name: Format check with black
         run: |
-          black --check pgl_utils/ tests/
+          black --check --target-version py311 pgl_utils/ tests/
       
       - name: Run tests
         run: |
