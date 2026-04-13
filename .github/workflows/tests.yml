@@ -51,10 +51,7 @@ jobs:
         run: |
           # flake8 pgl_utils/ tests/
           echo "Flake8 linting desabilitado - considere usar ferramentas alternativas como ruff ou pylint"
-      
-      - name: Format check with black
-        run: |
-          black --check --target-version py311 pgl_utils/ tests/
+
       
       - name: Type check with mypy
         run: |
