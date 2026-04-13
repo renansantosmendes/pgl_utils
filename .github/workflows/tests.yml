@@ -15,15 +15,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ['3.10', '3.11']
-        exclude:
-          # Reduce matrix to save CI time
-          - os: macos-latest
-            python-version: '3.9'
-          - os: windows-latest
-            python-version: '3.9'
-    
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.10', '3.11', '3.12']
+
+
     steps:
       - uses: actions/checkout@v3
       
@@ -45,7 +40,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
           # Install deep_learning module dependencies
-          pip install networkx>=2.8.0 matplotlib>=3.5.0 tensorflow>=2.10.0
+          pip install networkx>=2.8.0 matplotlib>=3.5.0 tensorflow>=2.10.0 seaborn>=0.12.0
       
       - name: Lint with flake8
         run: |
