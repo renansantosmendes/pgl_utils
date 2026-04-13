@@ -9,7 +9,7 @@ import seaborn as sns
 from tensorflow import keras
 
 
-def draw_neural_network_2(model, max_nodes_per_layer=20):
+def draw_neural_network(model, max_nodes_per_layer=20):
     """
     Draw a visual representation of a neural network architecture.
     
