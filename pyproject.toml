@@ -73,21 +73,4 @@ Homepage = "https://github.com/renansantosmendes/pgl_utils"
 Repository = "https://github.com/renansantosmendes/pgl_utils.git"
 Issues = "https://github.com/renansantosmendes/pgl_utils/issues"
 
-[tool.black]
-line-length = 100
-target-version = ['py310', 'py311']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # diretórios
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
 
