@@ -1,5 +1,5 @@
 import unittest
-from base_tracker import BaseExperimentTracker
+from pgl_utils.mlops.experiments.base_tracker import BaseExperimentTracker
 
 
 class TestBaseExperimentTracker(unittest.TestCase):

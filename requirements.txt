@@ -1,20 +1,23 @@
-# Core dependencies
-
+--extra-index-url https://download.pytorch.org/whl/cu126
+ 
+# Deep Learning
+torch>=2.7.0
+torchvision
+torchaudio
+keras>=3.0.0
+tensorflow>=2.16.0
+ 
+# MLOps
 mlflow
 dagshub
+ 
+# Visualization & Utils
 networkx>=2.8.0
 matplotlib>=3.5.0
-tensorflow>=2.10.0
 seaborn>=0.12.0
+ 
 # Optional: Generative AI
 # openai>=0.27.0
 # langchain>=0.0.100
 # huggingface-hub>=0.12.0
-
-pytest>=7.0.0
-pytest-cov>=4.0.0
-mypy>=1.0.0
-ruff>=0.4.0
-black>=22.0
-flake8>=4.0  # Desabilitado - linting automático pode quebrar o projeto
-uv
+ 

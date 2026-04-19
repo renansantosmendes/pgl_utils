@@ -1,5 +1,4 @@
 name: Tests
-
 on:
   push:
     branches:
@@ -14,50 +13,40 @@ jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
-
+        python-version: ['3.10', '3.11', '3.12']
 
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      
-      - name: Cache pip packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-      
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-          # Install deep_learning module dependencies
-          pip install networkx>=2.8.0 matplotlib>=3.5.0 tensorflow>=2.10.0 seaborn>=0.12.0
-      
-      - name: Lint with flake8
-        run: |
-          # flake8 pgl_utils/ tests/
-          echo "Flake8 linting desabilitado - considere usar ferramentas alternativas como ruff ou pylint"
+      - uses: actions/checkout@v4
 
-      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv pip install -e ".[dev]" --system
+
+      - name: Lint with ruff
+        run: |
+          uv run ruff check pgl_utils/ tests/
+          uv run ruff format --check pgl_utils/ tests/
+
       - name: Type check with mypy
-        run: |
-          mypy pgl_utils/ --ignore-missing-imports || true
-      
+        run: uv run mypy pgl_utils/ --ignore-missing-imports
+        continue-on-error: true
+
       - name: Run tests
-        run: |
-          pytest tests/ -v --cov=pgl_utils --cov-report=xml --cov-report=term
-      
+        run: uv run pytest tests/ -v --cov=pgl_utils --cov-report=xml --cov-report=term
+
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        uses: codecov/codecov-action@v4
         with:
           file: ./coverage.xml
           fail_ci_if_error: false
