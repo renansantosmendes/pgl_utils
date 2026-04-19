@@ -2,7 +2,6 @@
 Tests for core module
 """
 
-import pytest
 from pgl_utils.core import utils
 
 

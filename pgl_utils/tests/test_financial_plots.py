@@ -1,4 +1,3 @@
-import pytest
 import pandas as pd
 import numpy as np
 from pgl_utils.genai import financial_plots

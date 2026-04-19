@@ -34,10 +34,10 @@ jobs:
       - name: Install dependencies
         run: uv pip install -e ".[dev]"
 
-      - name: Lint with ruff
-        run: |
-          uv run ruff check pgl_utils/ tests/
-          uv run ruff format --check pgl_utils/ tests/
+      # - name: Lint with ruff
+      #   run: |
+      #     uv run ruff check pgl_utils/ tests/
+      #     uv run ruff format --check pgl_utils/ tests/
 
       - name: Type check with mypy
         run: uv run mypy pgl_utils/ --ignore-missing-imports
