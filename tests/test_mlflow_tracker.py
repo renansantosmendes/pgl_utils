@@ -6,19 +6,19 @@ class MockMLflow:
     def __init__(self):
         self.actions = []
 
-    def start_run(self):
+    def start_run(self, **kwargs):
         self.actions.append("start")
 
     def log_params(self, params):
         self.actions.append(("params", params))
 
-    def log_metrics(self, metrics):
+    def log_metrics(self, metrics, step=None):
         self.actions.append(("metrics", metrics))
 
     def log_model(self, artifact_path, python_model):
         self.actions.append(("model", artifact_path))
 
-    def end_run(self):
+    def end_run(self, **kwargs):
         self.actions.append("end")
 
 

@@ -1,23 +1,15 @@
-from abc import ABC, abstractmethod
-
-
-class BaseExperimentTracker(ABC):
-    @abstractmethod
+class BaseExperimentTracker:
     def start_run(self):
-        pass
+        raise NotImplementedError
 
-    @abstractmethod
     def log_params(self, params: dict):
-        pass
+        raise NotImplementedError
 
-    @abstractmethod
     def log_metrics(self, metrics: dict):
-        pass
+        raise NotImplementedError
 
-    @abstractmethod
     def log_model(self, model, name: str):
-        pass
+        raise NotImplementedError
 
-    @abstractmethod
     def end_run(self):
-        pass
+        raise NotImplementedError

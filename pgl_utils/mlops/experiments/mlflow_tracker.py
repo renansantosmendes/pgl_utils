@@ -56,6 +56,7 @@ class MLflowTracker(BaseExperimentTracker):
         self.tags = tags or {}
         self._run = None
         self._start_time: float = 0.0
+        self.client = mlflow
 
         mlflow.set_tracking_uri(tracking_uri)
         mlflow.set_experiment(experiment_name)
@@ -91,26 +92,21 @@ class MLflowTracker(BaseExperimentTracker):
         MLflowTracker
             Self, so the method can be chained.
         """
-        self._run = mlflow.start_run(run_name=run_name, tags=self.tags)
+        self._run = self.client.start_run(run_name=run_name, tags=self.tags)
         self._start_time = time.time()
-        print(f"[MLflowTracker] Run started: {self._run.info.run_id}")
         return self
 
     def end_run(self, status: str = "FINISHED") -> None:
         """
-        Finalize the active run and log its total wall-clock duration.
+        Finalize the active run.
 
         Parameters
         ----------
         status : str
             MLflow terminal status. One of 'FINISHED', 'FAILED', 'KILLED'.
         """
-        if self._run:
-            elapsed = time.time() - self._start_time
-            mlflow.log_metric("duration_seconds", round(elapsed, 2))
-            mlflow.end_run(status=status)
-            print(f"[MLflowTracker] Run ended ({status}) — {elapsed:.1f}s")
-            self._run = None
+        self.client.end_run()
+        self._run = None
 
     # ──────────────────────────────────────────────────────────────
     #  Parameters and metrics
@@ -128,7 +124,7 @@ class MLflowTracker(BaseExperimentTracker):
         params : dict
             Hyperparameter name-value pairs.
         """
-        mlflow.log_params({k: str(v) for k, v in params.items()})
+        self.client.log_params(params)
 
     def log_metrics(self, metrics: dict, step: int | None = None) -> None:
         """
@@ -144,7 +140,10 @@ class MLflowTracker(BaseExperimentTracker):
         step : int, optional
             Training step or epoch index associated with these values.
         """
-        mlflow.log_metrics(metrics, step=step)
+        self.client.log_metrics(metrics, step=step)
+
+    def log_model(self, model, name: str) -> None:
+        self.client.log_model(name, model)
 
     def log_metric(self, key: str, value: float, step: int | None = None) -> None:
         """
