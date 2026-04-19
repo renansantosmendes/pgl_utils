@@ -42,7 +42,7 @@ class MLflowTracker(BaseExperimentTracker):
 
     _FLAVORS = {
         "sklearn": mlflow.sklearn,
-        "keras":   mlflow.keras,
+        "keras": mlflow.keras,
         "pytorch": mlflow.pytorch,
     }
 
@@ -146,8 +146,7 @@ class MLflowTracker(BaseExperimentTracker):
         """
         mlflow.log_metrics(metrics, step=step)
 
-    def log_metric(self, key: str, value: float,
-                   step: int | None = None) -> None:
+    def log_metric(self, key: str, value: float, step: int | None = None) -> None:
         """
         Log a single scalar metric.
 
@@ -166,8 +165,7 @@ class MLflowTracker(BaseExperimentTracker):
     #  Generic artifacts
     # ──────────────────────────────────────────────────────────────
 
-    def log_artifact(self, local_path: str,
-                     artifact_path: str | None = None) -> None:
+    def log_artifact(self, local_path: str, artifact_path: str | None = None) -> None:
         """
         Upload an arbitrary local file as a run artifact.
 
@@ -191,9 +189,7 @@ class MLflowTracker(BaseExperimentTracker):
         filename : str
             Artifact destination path (e.g. 'config/params.json').
         """
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(data, f, indent=2, default=str)
             tmp = f.name
         mlflow.log_artifact(tmp, artifact_path=filename)
@@ -283,7 +279,7 @@ class MLflowTracker(BaseExperimentTracker):
             keys, as returned by ``GridSearchCV.__dict__``.
         """
         summary = {
-            "best_score":  float(cv_results.get("best_score_", 0)),
+            "best_score": float(cv_results.get("best_score_", 0)),
             "best_params": cv_results.get("best_params_", {}),
         }
         self.log_metrics({"cv_best_score": summary["best_score"]})
@@ -321,14 +317,14 @@ class MLflowTracker(BaseExperimentTracker):
             under this name.
         """
         trainable = int(sum(np.prod(w.shape) for w in model.trainable_weights))
-        non_trainable = int(
-            sum(np.prod(w.shape) for w in model.non_trainable_weights)
+        non_trainable = int(sum(np.prod(w.shape) for w in model.non_trainable_weights))
+        self.log_params(
+            {
+                "trainable_params": trainable,
+                "non_trainable_params": non_trainable,
+                "total_params": trainable + non_trainable,
+            }
         )
-        self.log_params({
-            "trainable_params":     trainable,
-            "non_trainable_params": non_trainable,
-            "total_params":         trainable + non_trainable,
-        })
 
         try:
             self.log_dict_as_json(
@@ -340,9 +336,7 @@ class MLflowTracker(BaseExperimentTracker):
 
         summary_lines: list[str] = []
         model.summary(print_fn=lambda line: summary_lines.append(line))
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".txt", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("\n".join(summary_lines))
             tmp = f.name
         mlflow.log_artifact(tmp, artifact_path="model_summary.txt")
@@ -409,9 +403,11 @@ class MLflowTracker(BaseExperimentTracker):
 
         try:
             import keras
+
             Callback = keras.callbacks.Callback
         except ImportError:
             from tensorflow import keras
+
             Callback = keras.callbacks.Callback
 
         class _MLflowCallback(Callback):
@@ -457,21 +453,19 @@ class MLflowTracker(BaseExperimentTracker):
             If provided, registers the model in the MLflow Model Registry
             under this name.
         """
-        trainable = sum(
-            p.numel() for p in model.parameters() if p.requires_grad
-        )
+        trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
         non_trainable = sum(
             p.numel() for p in model.parameters() if not p.requires_grad
         )
-        self.log_params({
-            "trainable_params":     trainable,
-            "non_trainable_params": non_trainable,
-            "total_params":         trainable + non_trainable,
-        })
+        self.log_params(
+            {
+                "trainable_params": trainable,
+                "non_trainable_params": non_trainable,
+                "total_params": trainable + non_trainable,
+            }
+        )
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".txt", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write(repr(model))
             tmp = f.name
         mlflow.log_artifact(tmp, artifact_path="model_architecture.txt")
@@ -517,8 +511,8 @@ class MLflowTracker(BaseExperimentTracker):
         import torch
 
         payload = {
-            "epoch":           epoch,
-            "model_state":     model.state_dict(),
+            "epoch": epoch,
+            "model_state": model.state_dict(),
             "optimizer_state": optimizer.state_dict(),
             **(extra or {}),
         }
@@ -580,16 +574,23 @@ class MLflowTracker(BaseExperimentTracker):
         logs them as run parameters prefixed with 'env_'.
         """
         import sys
+
         versions: dict = {"python": sys.version}
-        for lib in ["numpy", "sklearn", "tensorflow", "keras",
-                    "torch", "mlflow", "pandas"]:
+        for lib in [
+            "numpy",
+            "sklearn",
+            "tensorflow",
+            "keras",
+            "torch",
+            "mlflow",
+            "pandas",
+        ]:
             try:
                 versions[lib] = __import__(lib).__version__
             except ImportError:
                 pass
         self.log_dict_as_json(versions, filename="environment.json")
-        self.log_params({f"env_{k}": v.split()[0]
-                         for k, v in versions.items()})
+        self.log_params({f"env_{k}": v.split()[0] for k, v in versions.items()})
 
     @property
     def run_id(self) -> str | None:
@@ -613,6 +614,7 @@ class MLflowTracker(BaseExperimentTracker):
 #  Usage examples
 # ══════════════════════════════════════════════════════════════════
 
+
 def example_sklearn():
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.datasets import load_iris
@@ -624,14 +626,15 @@ def example_sklearn():
 
     with MLflowTracker("iris_sklearn") as tracker:
         tracker.log_environment()
-        model = RandomForestClassifier(n_estimators=100, max_depth=5,
-                                       random_state=42)
+        model = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=42)
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
-        tracker.log_metrics({
-            "accuracy": accuracy_score(y_test, y_pred),
-            "f1_macro": f1_score(y_test, y_pred, average="macro"),
-        })
+        tracker.log_metrics(
+            {
+                "accuracy": accuracy_score(y_test, y_pred),
+                "f1_macro": f1_score(y_test, y_pred, average="macro"),
+            }
+        )
         tracker.log_sklearn_model(model, register_as="IrisClassifier")
         print("sklearn run_id:", tracker.run_id)
 
@@ -644,20 +647,34 @@ def example_keras():
 
     with MLflowTracker("binary_keras") as tracker:
         tracker.log_environment()
-        tracker.log_params({"optimizer": "adam", "loss": "binary_crossentropy",
-                            "epochs": 10, "batch_size": 32})
+        tracker.log_params(
+            {
+                "optimizer": "adam",
+                "loss": "binary_crossentropy",
+                "epochs": 10,
+                "batch_size": 32,
+            }
+        )
 
-        model = tf.keras.Sequential([
-            tf.keras.layers.Dense(64, activation="relu", input_shape=(20,)),
-            tf.keras.layers.Dropout(0.3),
-            tf.keras.layers.Dense(32, activation="relu"),
-            tf.keras.layers.Dense(1,  activation="sigmoid"),
-        ])
-        model.compile(optimizer="adam", loss="binary_crossentropy",
-                      metrics=["accuracy"])
+        model = tf.keras.Sequential(
+            [
+                tf.keras.layers.Dense(64, activation="relu", input_shape=(20,)),
+                tf.keras.layers.Dropout(0.3),
+                tf.keras.layers.Dense(32, activation="relu"),
+                tf.keras.layers.Dense(1, activation="sigmoid"),
+            ]
+        )
+        model.compile(
+            optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"]
+        )
 
         history = model.fit(
-            X, y, epochs=10, batch_size=32, validation_split=0.2, verbose=0,
+            X,
+            y,
+            epochs=10,
+            batch_size=32,
+            validation_split=0.2,
+            verbose=0,
             callbacks=[tracker.keras_callback()],
         )
         tracker.log_keras_history(history)
@@ -679,26 +696,32 @@ def example_pytorch():
         def __init__(self):
             super().__init__()
             self.net = nn.Sequential(
-                nn.Linear(16, 64), nn.ReLU(),
+                nn.Linear(16, 64),
+                nn.ReLU(),
                 nn.Dropout(0.2),
-                nn.Linear(64, 32), nn.ReLU(),
-                nn.Linear(32, 1),  nn.Sigmoid(),
+                nn.Linear(64, 32),
+                nn.ReLU(),
+                nn.Linear(32, 1),
+                nn.Sigmoid(),
             )
+
         def forward(self, x):
             return self.net(x)
 
-    model     = MLP()
+    model = MLP()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     criterion = nn.BCELoss()
 
     with MLflowTracker("binary_pytorch") as tracker:
         tracker.log_environment()
-        tracker.log_params({
-            "optimizer":  "Adam",
-            "lr":         1e-3,
-            "epochs":     10,
-            "batch_size": 32,
-        })
+        tracker.log_params(
+            {
+                "optimizer": "Adam",
+                "lr": 1e-3,
+                "epochs": 10,
+                "batch_size": 32,
+            }
+        )
 
         for epoch in range(1, 11):
             model.train()
@@ -715,16 +738,19 @@ def example_pytorch():
             model.eval()
             with torch.no_grad():
                 preds = (model(X) > 0.5).float()
-                acc   = (preds == y).float().mean().item()
+                acc = (preds == y).float().mean().item()
 
             tracker.pytorch_epoch_log(
-                epoch, train_loss=avg_loss,
+                epoch,
+                train_loss=avg_loss,
                 extra_metrics={"accuracy": acc},
             )
 
             if epoch % 5 == 0:
                 tracker.log_pytorch_checkpoint(
-                    model, optimizer, epoch,
+                    model,
+                    optimizer,
+                    epoch,
                     extra={"train_loss": avg_loss},
                 )
 
@@ -737,7 +763,10 @@ def example_pytorch():
 
 
 if __name__ == "__main__":
-    print("=== scikit-learn ==="); example_sklearn()
-    print("\n=== Keras ===");       example_keras()
-    print("\n=== PyTorch ===");     example_pytorch()
+    print("=== scikit-learn ===")
+    example_sklearn()
+    print("\n=== Keras ===")
+    example_keras()
+    print("\n=== PyTorch ===")
+    example_pytorch()
     print("\nOpen the UI:  mlflow ui --backend-store-uri ./mlruns")

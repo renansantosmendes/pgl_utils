@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class BaseExperimentTracker(ABC):
     @abstractmethod
     def start_run(self):

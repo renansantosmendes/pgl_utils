@@ -1,11 +1,12 @@
 import unittest
 from base_tracker import BaseExperimentTracker
 
+
 class TestBaseExperimentTracker(unittest.TestCase):
     def test_methods_exist(self):
-        methods = ['start_run', 'log_params', 'log_metrics', 'log_model', 'end_run']
+        methods = ["start_run", "log_params", "log_metrics", "log_model", "end_run"]
         for method in methods:
-            self.assertTrue(hasattr(BaseExperimentTracker, method), f'Missing {method}')
+            self.assertTrue(hasattr(BaseExperimentTracker, method), f"Missing {method}")
 
     def test_start_run_implemented(self):
         with self.assertRaises(NotImplementedError):
@@ -21,7 +22,7 @@ class TestBaseExperimentTracker(unittest.TestCase):
 
     def test_log_model_implemented(self):
         with self.assertRaises(NotImplementedError):
-            BaseExperimentTracker().log_model(None, '')
+            BaseExperimentTracker().log_model(None, "")
 
     def test_end_run_implemented(self):
         with self.assertRaises(NotImplementedError):
