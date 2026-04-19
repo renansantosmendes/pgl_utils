@@ -1,4 +1,4 @@
-from base_tracker import BaseExperimentTracker
+from pgl_utils.mlops.experiments.base_tracker import BaseExperimentTracker
 
 import os
 import json
