@@ -12,7 +12,7 @@ from tensorflow import keras
 def draw_neural_network(model, max_nodes_per_layer=20):
     """
     Draw a visual representation of a neural network architecture.
-    
+
     The graph size is proportional to the network size to ensure proper visualization
     of both small and large networks. For large networks, only a subset of nodes is
     displayed to maintain performance.
@@ -49,16 +49,16 @@ def draw_neural_network(model, max_nodes_per_layer=20):
     # Calcular dimensões proporcionais
     n_layers = len(layers)
     max_nodes = max(n_nodes for _, n_nodes in layers)
-    
+
     # Ajustar tamanho da figura proporcionalmente
     # Mínimo: 6x4, máximo: 16x12
     fig_width = max(6, min(16, n_layers * 1.5 + 3))
     # Usar max_nodes_per_layer para calcular altura
     fig_height = max(4, min(12, max_nodes_per_layer * 0.5 + 2))
-    
+
     # Ajustar tamanho dos nós proporcionalmente (mínimo: 100, máximo: 400)
     node_size = max(100, min(400, 2000 / max_nodes_per_layer))
-    
+
     # Ajustar tamanho da fonte proporcionalmente
     font_size = max(6, min(11, 100 / max_nodes_per_layer))
     arrow_size = max(8, min(15, 80 / max_nodes_per_layer))
@@ -75,9 +75,9 @@ def draw_neural_network(model, max_nodes_per_layer=20):
             # Amostrar nós distribuídos uniformemente
             step = n_nodes / max_nodes_per_layer
             shown_nodes = [int(j * step) for j in range(max_nodes_per_layer)]
-        
+
         nodes_per_layer[i] = shown_nodes
-        
+
         for idx, j in enumerate(shown_nodes):
             node_id = f"{i}_{j}"
             G.add_node(node_id)
@@ -120,7 +120,7 @@ def draw_neural_network(model, max_nodes_per_layer=20):
             label = f"{layer_name}\n({shown_count}/{n_nodes})"
         else:
             label = f"{layer_name}\n({n_nodes})"
-        
+
         plt.text(
             i,
             (shown_count / 2) + 1.2,
@@ -142,10 +142,11 @@ def placeholder():
     """
     return "DL architectures utilities"
 
+
 def plot_convergence(history):
     """
     Plot the convergence of training and validation loss over epochs.
-    
+
     This function visualizes how the model's loss changes during training,
     helping to identify overfitting or underfitting patterns.
 
@@ -161,19 +162,20 @@ def plot_convergence(history):
         Displays the convergence plot
     """
     plt.figure(figsize=(10, 5))
-    plt.plot(history.history['loss'], label='Treino')
-    plt.plot(history.history['val_loss'], label='Validação')
-    plt.title('Convergência da Função de Perda (Loss)')
-    plt.xlabel('Épocas')
-    plt.ylabel('Loss')
+    plt.plot(history.history["loss"], label="Treino")
+    plt.plot(history.history["val_loss"], label="Validação")
+    plt.title("Convergência da Função de Perda (Loss)")
+    plt.xlabel("Épocas")
+    plt.ylabel("Loss")
     plt.legend()
     plt.grid(True)
     plt.show()
 
+
 def get_all_weights(model):
     """
     Extract all weights from all layers of a neural network model.
-    
+
     Collects weights from each layer that has trainable parameters and returns
     them as a single flattened array. Biases are excluded.
 
@@ -186,7 +188,7 @@ def get_all_weights(model):
     -------
     numpy.ndarray
         1D array containing all flattened weights from the model's layers
-        
+
     Notes
     -----
     - Only weight matrices are included (biases are excluded)
@@ -195,15 +197,16 @@ def get_all_weights(model):
     """
     weights_list = []
     for layer in model.layers:
-        if hasattr(layer, 'get_weights') and len(layer.get_weights()) > 0:
+        if hasattr(layer, "get_weights") and len(layer.get_weights()) > 0:
             # Pegamos apenas os pesos (índice 0), ignorando bias (índice 1)
             weights_list.append(layer.get_weights()[0].flatten())
     return np.concatenate(weights_list)
 
+
 def plot_weight_distribution(weights, title):
     """
     Plot the distribution of neural network weights as a histogram.
-    
+
     Visualizes the distribution of weight values from a model, which can help
     identify issues like weight saturation or dying neurons.
 
@@ -218,7 +221,7 @@ def plot_weight_distribution(weights, title):
     -------
     None
         Displays the weight distribution histogram
-        
+
     Notes
     -----
     - Uses kernel density estimation (KDE) to show smooth distribution
@@ -226,9 +229,9 @@ def plot_weight_distribution(weights, title):
     - Can be used with output from get_all_weights()
     """
     plt.figure(figsize=(10, 5))
-    sns.histplot(weights, kde=True, color='skyblue')
+    sns.histplot(weights, kde=True, color="skyblue")
     plt.title(title)
-    plt.xlabel('Valor do Peso')
-    plt.ylabel('Frequência')
+    plt.xlabel("Valor do Peso")
+    plt.ylabel("Frequência")
     plt.grid(True, alpha=0.3)
     plt.show()

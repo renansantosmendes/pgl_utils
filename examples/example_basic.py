@@ -2,33 +2,28 @@
 Basic example of using pgl_utils
 """
 
+import sys, os
+
+os.environ['TF_CPP_MAX_LOG_LEVEL'] = '3'
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+    
+
 from pgl_utils import core
 from pgl_utils.ml import preprocessing, models
-from pgl_utils.puc import config as puc_config
-from pgl_utils.ibmec import config as ibmec_config
 
 
 def main():
     """Run basic examples"""
-    
+
     print("=" * 50)
     print("Post Graduation Utils - Basic Example")
     print("=" * 50)
-    
-    # Core utilities
-    print("\n1. Core Utilities:")
-    print(f"   {core.utils.placeholder()}")
-    
-    # ML utilities
-    print("\n2. Machine Learning Utilities:")
-    print(f"   {models.placeholder()}")
-    print(f"   {preprocessing.placeholder()}")
-    
-    # Institution-specific
-    print("\n3. Institution-Specific Tools:")
-    print(f"   PUC: {puc_config.PUCConfig.get_info()}")
-    print(f"   IBMEC: {ibmec_config.IBMECConfig.get_info()}")
-    
+
+
     print("\n" + "=" * 50)
 
 
