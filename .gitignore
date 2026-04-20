@@ -136,3 +136,40 @@ Thumbs.db
 # Project specific
 .env.local
 .env.*.local
+
+# MLflow
+mlruns/
+mlflow.db
+outputs/
+
+# Additional virtual environments
+pgl_env/
+
+# Additional cache directories
+*.pyc
+.cache/
+tmp/
+temp/
+
+# DagsHub
+.dvc/
+.dvcignore
+
+# Experiment tracking
+wandb/
+tensorboard_logs/
+logs/
+
+# Model artifacts
+models/
+checkpoints/
+*.h5
+*.pkl
+*.joblib
+*.pt
+*.pth
+
+# Data files (optional - uncomment if needed)
+# *.csv
+# *.parquet
+# data/

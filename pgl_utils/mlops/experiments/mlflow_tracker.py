@@ -4,6 +4,7 @@ import os
 import json
 import time
 import tempfile
+from pathlib import Path
 from typing import Any
 
 import mlflow
@@ -11,6 +12,8 @@ import mlflow.sklearn
 import mlflow.keras
 import mlflow.pytorch
 import numpy as np
+
+_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif"}
 
 
 class MLflowTracker(BaseExperimentTracker):
@@ -29,15 +32,42 @@ class MLflowTracker(BaseExperimentTracker):
         not exist.
     tracking_uri : str
         MLflow tracking server URI. Defaults to a local './mlruns' folder.
+        Ignored when DagHub credentials are provided.
     tags : dict, optional
         Key-value tags attached to every run started by this tracker.
+    run_name : str, optional
+        Human-readable label shown in the MLflow UI for this run.
+        If omitted, MLflow generates an automatic name.
+    dagshub_url : str, optional
+        Full DagHub repository URL, e.g.
+        ``"https://dagshub.com/username/repo-name"``.
+        Extra path segments (e.g. ``/experiments``) are ignored.
+        When supplied together with *dagshub_user* and *dagshub_token*,
+        all MLflow runs are persisted on DagHub via its native HTTP
+        tracking endpoint — no ``dagshub`` SDK required.
+    dagshub_user : str, optional
+        DagHub username used for authentication.
+    dagshub_token : str, optional
+        DagHub personal access token used for authentication.
 
     Examples
     --------
-    >>> with MLflowTracker("my_experiment") as tracker:
-    ...     tracker.log_params({"lr": 1e-3, "epochs": 50})
-    ...     tracker.log_metrics({"accuracy": 0.95})
-    ...     tracker.log_sklearn_model(model, "random_forest")
+    Local storage (default)::
+
+        with MLflowTracker("my_experiment") as tracker:
+            tracker.log_params({"lr": 1e-3, "epochs": 50})
+            tracker.log_metrics({"accuracy": 0.95})
+            tracker.log_sklearn_model(model, "random_forest")
+
+    DagHub remote storage::
+
+        with MLflowTracker(
+            "my_experiment",
+            dagshub_url="https://dagshub.com/user/repo",
+            dagshub_user="user",
+            dagshub_token="<token>",
+        ) as tracker:
+            tracker.log_params({"lr": 1e-3})
     """
 
     _FLAVORS = {
@@ -51,22 +81,49 @@ class MLflowTracker(BaseExperimentTracker):
         experiment_name: str,
         tracking_uri: str = "./mlruns",
         tags: dict | None = None,
+        run_name: str | None = None,
+        dagshub_url: str | None = None,
+        dagshub_user: str | None = None,
+        dagshub_token: str | None = None,
     ):
         self.experiment_name = experiment_name
         self.tags = tags or {}
+        self._run_name = run_name
         self._run = None
         self._start_time: float = 0.0
         self.client = mlflow
 
-        mlflow.set_tracking_uri(tracking_uri)
+        if dagshub_url and dagshub_user and dagshub_token:
+            self._init_dagshub(dagshub_url, dagshub_user, dagshub_token)
+        else:
+            mlflow.set_tracking_uri(tracking_uri)
+
         mlflow.set_experiment(experiment_name)
+
+    def _init_dagshub(self, url: str, user: str, token: str) -> None:
+        """Configure MLflow to use DagHub as the remote tracking store.
+
+        Connects via MLflow's native HTTP tracking — no dagshub SDK required.
+        The MLflow URI is derived by stripping any trailing path segments
+        beyond ``/<user>/<repo>`` and appending ``.mlflow``.
+        """
+        # Normalise URL: keep only scheme + host + first two path segments
+        # e.g. "https://dagshub.com/user/repo/experiments" → "https://dagshub.com/user/repo"
+        parts = url.rstrip("/").split("/")
+        base_url = "/".join(parts[:5])  # https: + "" + host + user + repo
+        mlflow_uri = base_url + ".mlflow"
+
+        os.environ["MLFLOW_TRACKING_USERNAME"] = user
+        os.environ["MLFLOW_TRACKING_PASSWORD"] = token
+        mlflow.set_tracking_uri(mlflow_uri)
+        print(f"[MLflowTracker] DagHub tracking enabled → {mlflow_uri}")
 
     # ──────────────────────────────────────────────────────────────
     #  Context manager
     # ──────────────────────────────────────────────────────────────
 
     def __enter__(self):
-        self.start_run()
+        self.start_run(run_name=self._run_name)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -210,6 +267,53 @@ class MLflowTracker(BaseExperimentTracker):
             tmp = f.name
         mlflow.log_artifact(tmp, artifact_path=filename)
         os.unlink(tmp)
+
+    def log_image(
+        self,
+        image,
+        artifact_path: str,
+        step: int | None = None,
+    ) -> None:
+        """
+        Log an image or animated GIF as a run artifact.
+
+        Accepts a file path (str / Path) or an in-memory image
+        (PIL.Image or numpy array). Animated GIFs must be supplied as
+        a file path — MLflow's native image logger does not support
+        multi-frame GIFs.
+
+        Supported extensions when passing a file path:
+        ``.png``, ``.jpg``, ``.jpeg``, ``.gif``.
+
+        Parameters
+        ----------
+        image : str | Path | PIL.Image.Image | np.ndarray
+            Image source. When a file path is given the file is uploaded
+            as-is (preserving the original format, including animated GIFs).
+            When a PIL image or NumPy array is given it is logged via
+            ``mlflow.log_image``.
+        artifact_path : str
+            Destination path inside the run's artifact store, including
+            the filename (e.g. ``"plots/confusion_matrix.png"``).
+        step : int, optional
+            Training step associated with this image (only used when
+            *image* is a PIL image or numpy array).
+        """
+        if isinstance(image, (str, Path)):
+            src = Path(image)
+            ext = src.suffix.lower()
+            if ext not in _IMAGE_EXTENSIONS:
+                raise ValueError(
+                    f"Unsupported image extension '{ext}'. "
+                    f"Allowed: {sorted(_IMAGE_EXTENSIONS)}"
+                )
+            artifact_dir = str(Path(artifact_path).parent)
+            mlflow.log_artifact(str(src), artifact_path=artifact_dir or None)
+        else:
+            # PIL.Image or np.ndarray — delegate to mlflow.log_image
+            mlflow.log_image(image, artifact_path, step=step)
+
+        print(f"[MLflowTracker] Image logged at '{artifact_path}'")
 
     # ──────────────────────────────────────────────────────────────
     #  scikit-learn

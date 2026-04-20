@@ -10,7 +10,8 @@ tensorflow>=2.16.0
 # MLOps
 mlflow
 dagshub
- 
+numpy
+python-dotenv
 # Visualization & Utils
 networkx>=2.8.0
 matplotlib>=3.5.0
