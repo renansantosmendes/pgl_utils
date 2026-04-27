@@ -9,130 +9,232 @@ import seaborn as sns
 from tensorflow import keras
 
 
-def draw_neural_network(model, max_nodes_per_layer=20):
+def draw_neural_network(
+        model, 
+        max_nodes_per_layer=20, 
+        show_input_layer=True,
+        show_weights=False,
+        ) -> None:
     """
     Draw a visual representation of a neural network architecture.
-
-    The graph size is proportional to the network size to ensure proper visualization
-    of both small and large networks. For large networks, only a subset of nodes is
-    displayed to maintain performance.
 
     Parameters
     ----------
     model : keras.Model
         A Keras/TensorFlow model to visualize
     max_nodes_per_layer : int, optional
-        Maximum number of nodes to display per layer. Layers with more nodes will
-        have nodes sampled. Default is 20.
+        Maximum number of nodes to display per layer. Default is 20.
+    show_input_layer : bool, optional
+        If False, the input layer will not be displayed.
+    show_weights : bool, optional
+        If True, edge thickness and color reflect the model's actual weights.
+        Positive weights are shown in blue, negative in red, and near-zero
+        weights become nearly invisible. Default is False.
 
     Returns
     -------
     None
         Displays the network architecture plot
     """
+    import numpy as np
+    import matplotlib.colors as mcolors
+
     G = nx.DiGraph()
 
-    # Identificar as camadas e seus tamanhos
     layers = []
-    # Camada de entrada
     input_shape = model.input_shape[1:]
     layers.append(("Input", input_shape[0]))
 
-    # Camadas densas
+    dense_layers = []
     for layer in model.layers:
         if isinstance(layer, keras.layers.Dense):
             layers.append((layer.name, layer.units))
+            dense_layers.append(layer)
+
+    if not show_input_layer:
+        layers = layers[1:]
+        # ajustar índice dos pesos
+        weight_offset = 0
+    else:
+        weight_offset = 0
 
     pos = {}
     node_colors = []
 
-    # Calcular dimensões proporcionais
     n_layers = len(layers)
-    max_nodes = max(n_nodes for _, n_nodes in layers)
+    max_nodes_shown = min(max_nodes_per_layer, max(n for _, n in layers))
 
-    # Ajustar tamanho da figura proporcionalmente
-    # Mínimo: 6x4, máximo: 16x12
-    fig_width = max(6, min(16, n_layers * 1.5 + 3))
-    # Usar max_nodes_per_layer para calcular altura
-    fig_height = max(4, min(12, max_nodes_per_layer * 0.5 + 2))
+    h_spacing = max(3.0, min(5.0, 20.0 / n_layers))
+    v_spacing = max(1.0, min(2.0, 15.0 / max_nodes_shown))
 
-    # Ajustar tamanho dos nós proporcionalmente (mínimo: 100, máximo: 400)
-    node_size = max(100, min(400, 2000 / max_nodes_per_layer))
+    fig_width = max(8, min(18, n_layers * h_spacing * 0.6 + 2))
+    fig_height = max(5, min(14, max_nodes_shown * v_spacing * 0.55 + 2))
 
-    # Ajustar tamanho da fonte proporcionalmente
-    font_size = max(6, min(11, 100 / max_nodes_per_layer))
-    arrow_size = max(8, min(15, 80 / max_nodes_per_layer))
+    node_size = max(200, min(800, 5000 / max_nodes_shown))
+    font_size = max(7, min(12, 150 / max_nodes_shown))
+    arrow_size = max(5, min(12, 60 / max_nodes_shown))
+    base_edge_width = max(0.3, min(1.0, 8.0 / max_nodes_shown))
+    base_edge_alpha = max(0.15, min(0.5, 5.0 / max_nodes_shown))
+    node_alpha = 0.75
 
-    # Gerar nós e posições (com limite de nós por camada)
     nodes_per_layer = {}
     for i, (layer_name, n_nodes) in enumerate(layers):
-        # Determinar quantos nós desenhar
         if n_nodes <= max_nodes_per_layer:
-            nodes_to_draw = n_nodes
             shown_nodes = list(range(n_nodes))
         else:
-            nodes_to_draw = max_nodes_per_layer
-            # Amostrar nós distribuídos uniformemente
             step = n_nodes / max_nodes_per_layer
             shown_nodes = [int(j * step) for j in range(max_nodes_per_layer)]
 
         nodes_per_layer[i] = shown_nodes
+        n_shown = len(shown_nodes)
 
         for idx, j in enumerate(shown_nodes):
             node_id = f"{i}_{j}"
             G.add_node(node_id)
-            # Posicionamento: x = camada, y = neurônio (centralizado)
-            pos[node_id] = (i, idx - nodes_to_draw / 2)
-            node_colors.append(
-                "lightgreen"
-                if i == 0
-                else ("orange" if i == len(layers) - 1 else "skyblue")
-            )
+            y = (idx - (n_shown - 1) / 2.0) * v_spacing
+            x = i * h_spacing
+            pos[node_id] = (x, y)
 
-    # Adicionar arestas entre camadas adjacentes (apenas entre nós desenhados)
+            if i == 0 and show_input_layer:
+                node_colors.append("lightgreen")
+            elif i == len(layers) - 1:
+                node_colors.append("orange")
+            else:
+                node_colors.append("skyblue")
+
+    # Construir arestas com ou sem informação de peso
+    edge_list = []
+    edge_weights_vals = []
+
     for i in range(len(layers) - 1):
-        curr_layer_nodes = [f"{i}_{j}" for j in nodes_per_layer[i]]
-        next_layer_nodes = [f"{i + 1}_{j}" for j in nodes_per_layer[i + 1]]
-        # Amostrar arestas para evitar sobrecarga visual
-        for idx_u, u in enumerate(curr_layer_nodes):
-            for idx_v, v in enumerate(next_layer_nodes):
-                G.add_edge(u, v)
+        curr_nodes = nodes_per_layer[i]
+        next_nodes = nodes_per_layer[i + 1]
 
-    # Plotar
-    plt.figure(figsize=(fig_width, fig_height))
-    nx.draw(
-        G,
-        pos,
-        with_labels=False,
-        node_size=node_size,
-        node_color=node_colors,
-        edge_color="gray",
-        alpha=0.8,
-        arrows=True,
-        arrowsize=arrow_size,
-        width=1.0,
-    )
+        if show_weights and i < len(dense_layers):
+            # pesos da camada Dense: shape (input_dim, output_dim)
+            W = dense_layers[i].get_weights()[0]
 
-    # Adicionar legendas de camadas
-    for i, (layer_name, n_nodes) in enumerate(layers):
-        shown_count = len(nodes_per_layer[i])
-        if shown_count < n_nodes:
-            label = f"{layer_name}\n({shown_count}/{n_nodes})"
+            for u_idx, u_node in enumerate(curr_nodes):
+                for v_idx, v_node in enumerate(next_nodes):
+                    edge = (f"{i}_{u_node}", f"{i+1}_{v_node}")
+                    G.add_edge(*edge)
+                    edge_list.append(edge)
+
+                    # u_node e v_node são os índices reais no layer
+                    if u_node < W.shape[0] and v_node < W.shape[1]:
+                        edge_weights_vals.append(W[u_node, v_node])
+                    else:
+                        edge_weights_vals.append(0.0)
         else:
-            label = f"{layer_name}\n({n_nodes})"
+            for u_node in curr_nodes:
+                for v_node in next_nodes:
+                    edge = (f"{i}_{u_node}", f"{i+1}_{v_node}")
+                    G.add_edge(*edge)
+                    edge_list.append(edge)
+                    edge_weights_vals.append(0.0)
 
-        plt.text(
-            i,
-            (shown_count / 2) + 1.2,
-            label,
-            horizontalalignment="center",
-            fontsize=font_size,
-            fontweight="bold",
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+
+    # --- Desenhar arestas ---
+    if show_weights and len(edge_weights_vals) > 0:
+        weights_arr = np.array(edge_weights_vals)
+        abs_weights = np.abs(weights_arr)
+        w_max = abs_weights.max() if abs_weights.max() > 0 else 1.0
+        norm_weights = abs_weights / w_max  # 0..1
+
+        # Largura proporcional ao peso
+        max_width = max(2.5, min(4.0, 20.0 / max_nodes_shown))
+        min_width = 0.1
+        widths = min_width + norm_weights * (max_width - min_width)
+
+        # Alpha proporcional ao peso (pesos pequenos quase invisíveis)
+        min_alpha = 0.03
+        max_alpha = 0.85
+        alphas = min_alpha + norm_weights * (max_alpha - min_alpha)
+
+        # Cor: azul para positivo, vermelho para negativo
+        colors = []
+        for w, norm_w in zip(weights_arr, norm_weights):
+            if w >= 0:
+                # azul com intensidade proporcional
+                colors.append((0.1, 0.3, 0.9, min_alpha + norm_w * (max_alpha - min_alpha)))
+            else:
+                # vermelho com intensidade proporcional
+                colors.append((0.9, 0.15, 0.15, min_alpha + norm_w * (max_alpha - min_alpha)))
+
+        # Desenhar cada aresta individualmente para controle total
+        for idx, (u, v) in enumerate(edge_list):
+            nx.draw_networkx_edges(
+                G, pos, ax=ax,
+                edgelist=[(u, v)],
+                edge_color=[colors[idx]],
+                width=widths[idx],
+                arrows=True,
+                arrowsize=arrow_size,
+                node_size=node_size,
+            )
+    else:
+        nx.draw_networkx_edges(
+            G, pos, ax=ax,
+            edgelist=edge_list,
+            edge_color="gray",
+            width=base_edge_width,
+            alpha=base_edge_alpha,
+            arrows=True,
+            arrowsize=arrow_size,
+            node_size=node_size,
         )
 
-    # plt.title("Representação da Rede Neural", fontsize=int(font_size * 1.5))
-    plt.axis("off")
-    plt.tight_layout()
+    # --- Nós por cima ---
+    nx.draw_networkx_nodes(
+        G, pos, ax=ax,
+        node_size=node_size,
+        node_color=node_colors,
+        edgecolors="gray",
+        linewidths=0.5,
+        alpha=node_alpha,
+    )
+
+    # --- Labels das camadas ---
+    for i, (layer_name, n_nodes) in enumerate(layers):
+        n_shown = len(nodes_per_layer[i])
+        top_y = ((n_shown - 1) / 2.0) * v_spacing
+        label_y = top_y + v_spacing * 0.8
+
+        if n_shown < n_nodes:
+            label = f"{layer_name}\n({n_shown}/{n_nodes} units)"
+        else:
+            label = f"{layer_name}\n({n_nodes} units)"
+
+        ax.text(
+            i * h_spacing,
+            label_y,
+            label,
+            ha="center",
+            va="bottom",
+            fontsize=font_size,
+            fontweight="bold",
+            color="dimgray",
+        )
+
+    # --- Legenda de pesos (só quando show_weights=True) ---
+    if show_weights:
+        from matplotlib.lines import Line2D
+        legend_elements = [
+            Line2D([0], [0], color=(0.1, 0.3, 0.9), linewidth=2.5, label="Peso positivo"),
+            Line2D([0], [0], color=(0.9, 0.15, 0.15), linewidth=2.5, label="Peso negativo"),
+            Line2D([0], [0], color="gray", linewidth=0.5, alpha=0.3, label="Peso ≈ 0"),
+        ]
+        ax.legend(
+            handles=legend_elements,
+            loc="lower right",
+            fontsize=font_size,
+            framealpha=0.8,
+        )
+
+    ax.axis("off")
+    ax.margins(x=0.08, y=0.12)
+    fig.tight_layout()
     plt.show()
 
 
