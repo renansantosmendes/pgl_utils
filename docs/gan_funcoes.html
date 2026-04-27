@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GAN · Funções Não-Lineares</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --panel: #12121c;
+    --border: #252540;
+    --gen: #2ee8a5;
+    --real: #e85d4a;
+    --text: #d0d0e4;
+    --muted: #5e5e80;
+    --grid: #181830;
+    --warn: #ffc44a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    padding: 20px 24px;
+  }
+
+  .wrap { max-width: 980px; margin: 0 auto; }
+
+  h1 {
+    font-size: 20px; font-weight: 700;
+    color: var(--gen); letter-spacing: -0.5px;
+  }
+  h1 .v { color: var(--muted); font-weight: 400; }
+  h1 .sub { color: var(--text); font-weight: 400; font-size: 15px; }
+
+  .tagline {
+    color: var(--muted); font-size: 10px;
+    margin: 4px 0 0; line-height: 1.6;
+  }
+
+  .func-bar {
+    display: flex; flex-wrap: wrap; gap: 7px;
+    margin: 14px 0;
+  }
+  .func-btn {
+    padding: 5px 13px; font-size: 11px;
+    font-family: inherit; border-radius: 3px;
+    cursor: pointer; transition: all 0.15s;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .func-btn:hover { border-color: var(--gen); color: var(--gen); }
+  .func-btn.active {
+    border-color: var(--gen);
+    background: rgba(46,232,165,0.08);
+    color: var(--gen);
+  }
+
+  .canvas-wrap {
+    border: 1px solid var(--border);
+    border-radius: 5px; overflow: hidden;
+    margin-bottom: 14px;
+    background: var(--bg);
+  }
+  canvas { width: 100%; height: auto; display: block; }
+
+  .controls {
+    display: flex; flex-wrap: wrap;
+    align-items: center; gap: 10px;
+  }
+
+  .btn-train {
+    padding: 9px 26px; font-size: 12px;
+    font-family: inherit; font-weight: 700;
+    border: none; border-radius: 3px;
+    cursor: pointer; letter-spacing: 0.5px;
+    transition: background 0.15s;
+  }
+  .btn-train.go { background: var(--gen); color: var(--bg); }
+  .btn-train.stop { background: var(--real); color: var(--bg); }
+
+  .btn-reset {
+    padding: 9px 18px; font-size: 12px;
+    font-family: inherit; border-radius: 3px;
+    background: transparent; cursor: pointer;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+  .btn-reset:hover { border-color: var(--text); color: var(--text); }
+
+  .speed-ctrl {
+    display: flex; align-items: center; gap: 6px; margin-left: 6px;
+  }
+  .speed-ctrl span { font-size: 10px; color: var(--muted); }
+  .speed-ctrl .val { color: var(--gen); min-width: 26px; }
+  input[type=range] { width: 90px; accent-color: var(--gen); }
+
+  .losses {
+    margin-left: auto;
+    display: flex; gap: 18px; font-size: 12px;
+  }
+  .losses .label { color: var(--muted); }
+  .losses .d-val { color: var(--real); font-weight: 600; }
+  .losses .g-val { color: var(--gen); font-weight: 600; }
+
+  .info {
+    margin-top: 18px; padding: 12px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 10px; line-height: 1.8;
+    color: var(--muted);
+  }
+  .info b { color: var(--warn); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .wrap > * {
+    animation: fadeUp 0.5s ease both;
+  }
+  .wrap > *:nth-child(2) { animation-delay: 0.05s; }
+  .wrap > *:nth-child(3) { animation-delay: 0.1s; }
+  .wrap > *:nth-child(4) { animation-delay: 0.15s; }
+  .wrap > *:nth-child(5) { animation-delay: 0.2s; }
+  .wrap > *:nth-child(6) { animation-delay: 0.25s; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div>
+    <h1>GAN <span class="v">v2</span> <span class="v">·</span>
+      <span class="sub">Aprendendo Funções Não-Lineares</span>
+    </h1>
+    <p class="tagline">Ruído gaussiano → MLP Generator → pontos (x,y) · Adam(β₁=0.5) · Label smoothing · D:G ratio 3:1 · Grad clipping</p>
+  </div>
+
+  <div class="func-bar" id="funcBar"></div>
+
+  <div class="canvas-wrap">
+    <canvas id="cv" width="940" height="420"></canvas>
+  </div>
+
+  <div class="controls">
+    <button class="btn-train go" id="btnTrain" onclick="toggleTrain()">▶ TREINAR</button>
+    <button class="btn-reset" onclick="resetAll()">↺ RESET</button>
+    <div class="speed-ctrl">
+      <span>Speed:</span>
+      <input type="range" id="speedSlider" min="1" max="20" value="5" oninput="speed=+this.value;document.getElementById('speedVal').textContent=speed+'x'">
+      <span class="val" id="speedVal">5x</span>
+    </div>
+    <div class="losses">
+      <span><span class="label">D </span><span class="d-val" id="dVal">0.000</span></span>
+      <span><span class="label">G </span><span class="g-val" id="gVal">0.000</span></span>
+    </div>
+  </div>
+
+  <div class="info">
+    <b>Como funciona:</b>
+    O <span style="color:var(--gen)">Generator</span> (32→128→128→128→128→2) recebe ruído gaussiano e gera pontos (x,y).
+    O <span style="color:var(--real)">Discriminator</span> (2→128→128→128→1) tenta distinguir reais de falsos.
+    Cache isolado no forward · Redes de 128 neurônios · Label smoothing (0.9) · D treina 3× por step do G · Gradient clipping ±1 · Batch 256
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  MINI NEURAL NETWORK LIBRARY (vanilla JS)
+// ══════════════════════════════════════════════════════════════
+
+function randn(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+
+class Tensor{
+  constructor(r,c,d){this.rows=r;this.cols=c;this.data=d||new Float64Array(r*c);this.grad=new Float64Array(r*c)}
+  get(r,c){return this.data[r*this.cols+c]}
+  set(r,c,v){this.data[r*this.cols+c]=v}
+  addGrad(r,c,v){this.grad[r*this.cols+c]+=v}
+  zeroGrad(){this.grad.fill(0)}
+  clone(){const t=new Tensor(this.rows,this.cols);t.data.set(this.data);return t}
+  static fromArray(a,r,c){const t=new Tensor(r,c);for(let i=0;i<a.length;i++)t.data[i]=a[i];return t}
+  static kaiming(r,c){const t=new Tensor(r,c),s=Math.sqrt(2/c);for(let i=0;i<r*c;i++)t.data[i]=randn()*s;return t}
+  static zeros(r,c){return new Tensor(r,c)}
+}
+
+class Linear{
+  constructor(iF,oF){this.w=Tensor.kaiming(oF,iF);this.b=Tensor.zeros(oF,1);this.iF=iF;this.oF=oF;this._in=null}
+  forward(x){
+    this._in=x.clone();
+    const B=x.rows,o=new Tensor(B,this.oF);
+    for(let i=0;i<B;i++)for(let j=0;j<this.oF;j++){
+      let s=this.b.data[j];
+      for(let k=0;k<this.iF;k++)s+=x.get(i,k)*this.w.get(j,k);
+      o.set(i,j,s);
+    }
+    return o;
+  }
+  backward(gO){
+    const B=this._in.rows,gI=new Tensor(B,this.iF);
+    for(let i=0;i<B;i++)for(let j=0;j<this.oF;j++){
+      const g=gO.get(i,j);
+      this.b.addGrad(j,0,g);
+      for(let k=0;k<this.iF;k++){
+        this.w.addGrad(j,k,g*this._in.get(i,k));
+        gI.data[i*this.iF+k]+=g*this.w.get(j,k);
+      }
+    }
+    return gI;
+  }
+  params(){return[this.w,this.b]}
+  zeroGrad(){this.w.zeroGrad();this.b.zeroGrad()}
+}
+
+class LeakyReLU{
+  constructor(a=0.2){this.a=a;this._in=null}
+  forward(x){this._in=x.clone();const o=new Tensor(x.rows,x.cols);for(let i=0;i<x.data.length;i++)o.data[i]=x.data[i]>0?x.data[i]:x.data[i]*this.a;return o}
+  backward(gO){const g=new Tensor(this._in.rows,this._in.cols);for(let i=0;i<this._in.data.length;i++)g.data[i]=gO.data[i]*(this._in.data[i]>0?1:this.a);return g}
+  params(){return[]}
+  zeroGrad(){}
+}
+
+class Tanh{
+  constructor(){this._o=null}
+  forward(x){const o=new Tensor(x.rows,x.cols);for(let i=0;i<x.data.length;i++)o.data[i]=Math.tanh(x.data[i]);this._o=o.clone();return o}
+  backward(gO){const g=new Tensor(this._o.rows,this._o.cols);for(let i=0;i<this._o.data.length;i++){const t=this._o.data[i];g.data[i]=gO.data[i]*(1-t*t)}return g}
+  params(){return[]}
+  zeroGrad(){}
+}
+
+class Sigmoid{
+  constructor(){this._o=null}
+  forward(x){const o=new Tensor(x.rows,x.cols);for(let i=0;i<x.data.length;i++)o.data[i]=1/(1+Math.exp(-Math.max(-20,Math.min(20,x.data[i]))));this._o=o.clone();return o}
+  backward(gO){const g=new Tensor(this._o.rows,this._o.cols);for(let i=0;i<this._o.data.length;i++){const s=this._o.data[i];g.data[i]=gO.data[i]*s*(1-s)}return g}
+  params(){return[]}
+  zeroGrad(){}
+}
+
+class MLP{
+  constructor(L){this.L=L}
+  forward(x){for(const l of this.L)x=l.forward(x);return x}
+  backward(g){for(let i=this.L.length-1;i>=0;i--)g=this.L[i].backward(g);return g}
+  params(){return this.L.flatMap(l=>l.params())}
+  zeroGrad(){this.L.forEach(l=>l.zeroGrad())}
+}
+
+class Adam{
+  constructor(P,lr=.001,b1=.9,b2=.999){
+    this.P=P;this.lr=lr;this.b1=b1;this.b2=b2;this.t=0;
+    this.m=P.map(p=>new Float64Array(p.data.length));
+    this.v=P.map(p=>new Float64Array(p.data.length));
+  }
+  step(){
+    this.t++;
+    const f1=1-this.b1**this.t,f2=1-this.b2**this.t;
+    for(let pi=0;pi<this.P.length;pi++){
+      const p=this.P[pi],m=this.m[pi],v=this.v[pi];
+      for(let i=0;i<p.data.length;i++){
+        let g=Math.max(-1,Math.min(1,p.grad[i]));
+        m[i]=this.b1*m[i]+(1-this.b1)*g;
+        v[i]=this.b2*v[i]+(1-this.b2)*g*g;
+        p.data[i]-=this.lr*(m[i]/f1)/(Math.sqrt(v[i]/f2)+1e-8);
+      }
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  FUNÇÕES MATEMÁTICAS
+// ══════════════════════════════════════════════════════════════
+
+const FUNCS={
+  "sin(x)":x=>Math.sin(x*Math.PI),
+  "x² + ruído":x=>x*x+randn()*0.05,
+  "espiral":null,
+  "x³ - x":x=>x*x*x-x,
+  "sinc(x)":x=>Math.abs(x)<.01?1:Math.sin(x*3)/(x*3),
+  "onda composta":x=>0.5*Math.sin(x*2*Math.PI)+0.3*Math.cos(x*5*Math.PI),
+};
+
+function sampleReal(name,n){
+  const pts=[];
+  if(name==="espiral"){
+    for(let i=0;i<n;i++){const t=Math.random()*4*Math.PI,r=t/(4*Math.PI);pts.push([r*Math.cos(t)*.8,r*Math.sin(t)*.8])}
+  }else{
+    const fn=FUNCS[name];
+    for(let i=0;i<n;i++){const x=Math.random()*2-1;pts.push([x,fn(x)])}
+  }
+  let mx=0;for(const[x,y]of pts)mx=Math.max(mx,Math.abs(x),Math.abs(y));
+  if(mx>1)for(const p of pts){p[0]/=mx;p[1]/=mx}
+  return pts;
+}
+
+function noiseG(n,d){const t=new Tensor(n,d);for(let i=0;i<n*d;i++)t.data[i]=randn();return t}
+
+// ══════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════
+
+let funcName="sin(x)";
+let isTraining=false;
+let epoch=0, dLoss=0, gLoss=0, speed=5;
+let animId=null;
+let G,D,optG,optD;
+const NOISE_DIM=32, HID=128, BATCH=256, D_STEPS=3;
+const hist={d:[],g:[]};
+
+function initNets(){
+  G=new MLP([
+    new Linear(NOISE_DIM,HID),new LeakyReLU(.2),
+    new Linear(HID,HID),new LeakyReLU(.2),
+    new Linear(HID,HID),new LeakyReLU(.2),
+    new Linear(HID,HID),new LeakyReLU(.2),
+    new Linear(HID,2),new Tanh(),
+  ]);
+  D=new MLP([
+    new Linear(2,HID),new LeakyReLU(.2),
+    new Linear(HID,HID),new LeakyReLU(.2),
+    new Linear(HID,HID),new LeakyReLU(.2),
+    new Linear(HID,1),new Sigmoid(),
+  ]);
+  optG=new Adam(G.params(),0.0002,0.5,0.999);
+  optD=new Adam(D.params(),0.0002,0.5,0.999);
+  hist.d.length=0;hist.g.length=0;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  TRAINING
+// ══════════════════════════════════════════════════════════════
+
+function trainStep(){
+  let lD=0;
+  // ── D steps ──
+  for(let ds=0;ds<D_STEPS;ds++){
+    D.zeroGrad();
+    const rp=sampleReal(funcName,BATCH);
+    const rIn=Tensor.fromArray(rp.flat(),BATCH,2);
+    const rOut=D.forward(rIn);
+
+    const n1=noiseG(BATCH,NOISE_DIM);
+    const fPts=G.forward(n1);
+    const fIn=fPts.clone();
+    const fOut=D.forward(fIn);
+
+    lD=0;
+    const gR=new Tensor(BATCH,1),gF=new Tensor(BATCH,1);
+    for(let i=0;i<BATCH;i++){
+      const r=Math.max(1e-7,Math.min(1-1e-7,rOut.get(i,0)));
+      const f=Math.max(1e-7,Math.min(1-1e-7,fOut.get(i,0)));
+      lD+=-0.9*Math.log(r)-0.1*Math.log(1-r)-Math.log(1-f);
+      gR.set(i,0,(-0.9/r+0.1/(1-r))/BATCH);
+      gF.set(i,0,(1/(1-f))/BATCH);
+    }
+    lD/=BATCH;
+
+    // Backward reais
+    D.zeroGrad();
+    D.forward(rIn.clone());
+    D.backward(gR);
+    const saved=D.params().map(p=>new Float64Array(p.grad));
+
+    // Backward fakes
+    D.zeroGrad();
+    D.forward(fIn);
+    D.backward(gF);
+
+    const dp=D.params();
+    for(let pi=0;pi<dp.length;pi++)
+      for(let gi=0;gi<dp[pi].grad.length;gi++)
+        dp[pi].grad[gi]+=saved[pi][gi];
+
+    optD.step();
+  }
+
+  // ── G step ──
+  G.zeroGrad();D.zeroGrad();
+  const n2=noiseG(BATCH,NOISE_DIM);
+  const fPts2=G.forward(n2);
+  const fOut2=D.forward(fPts2);
+
+  let lG=0;
+  const gG=new Tensor(BATCH,1);
+  for(let i=0;i<BATCH;i++){
+    const f=Math.max(1e-7,Math.min(1-1e-7,fOut2.get(i,0)));
+    lG+=-Math.log(f);
+    gG.set(i,0,(-1/f)/BATCH);
+  }
+  lG/=BATCH;
+
+  const gToG=D.backward(gG);
+  G.backward(gToG);
+  optG.step();
+
+  return{lD,lG};
+}
+
+// ══════════════════════════════════════════════════════════════
+//  DRAWING
+// ══════════════════════════════════════════════════════════════
+
+const cv=document.getElementById("cv");
+const ctx=cv.getContext("2d");
+
+function draw(){
+  const W=cv.width,H=cv.height;
+  const BG="#0a0a0f",GRID="#181830",BRD="#252540",
+        GEN="#2ee8a5",REAL="#e85d4a",TXT="#d0d0e4",MUT="#5e5e80";
+
+  ctx.fillStyle=BG;ctx.fillRect(0,0,W,H);
+
+  const pad=28;
+  const pW=W*.56,pH=H-pad*2-50;
+  const pX=pad+10,pY=pad+36;
+  const lX=pX+pW+36,lW=W-lX-pad,lH=pH;
+
+  const toX=v=>pX+(v+1)/2*pW;
+  const toY=v=>pY+pH-(v+1)/2*pH;
+
+  // Grid
+  ctx.strokeStyle=GRID;ctx.lineWidth=.5;
+  for(let i=0;i<=8;i++){
+    const x=pX+(i/8)*pW,y=pY+(i/8)*pH;
+    ctx.beginPath();ctx.moveTo(x,pY);ctx.lineTo(x,pY+pH);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(pX,y);ctx.lineTo(pX+pW,y);ctx.stroke();
+  }
+  ctx.strokeStyle=BRD;ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(toX(0),pY);ctx.lineTo(toX(0),pY+pH);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(pX,toY(0));ctx.lineTo(pX+pW,toY(0));ctx.stroke();
+  ctx.strokeRect(pX,pY,pW,pH);
+
+  // Real
+  const rp=sampleReal(funcName,400);
+  ctx.globalAlpha=.3;ctx.fillStyle=REAL;
+  for(const[x,y]of rp){ctx.beginPath();ctx.arc(toX(x),toY(y),2.2,0,Math.PI*2);ctx.fill()}
+  ctx.globalAlpha=1;
+
+  // Generated
+  if(G){
+    const nz=noiseG(400,NOISE_DIM);
+    const go=G.forward(nz);
+    ctx.globalAlpha=.55;ctx.fillStyle=GEN;
+    for(let i=0;i<400;i++){ctx.beginPath();ctx.arc(toX(go.get(i,0)),toY(go.get(i,1)),2.2,0,Math.PI*2);ctx.fill()}
+    ctx.globalAlpha=1;
+  }
+
+  // Labels
+  ctx.font="600 13px 'JetBrains Mono',monospace";ctx.fillStyle=TXT;
+  ctx.fillText("Espaço (x, y)",pX,pY-16);
+  ctx.font="11px 'JetBrains Mono',monospace";
+  ctx.fillStyle=REAL;ctx.fillText("● f(x) real",pX+pW-155,pY-16);
+  ctx.fillStyle=GEN;ctx.fillText("● G(z)",pX+pW-55,pY-16);
+  ctx.font="9px 'JetBrains Mono',monospace";ctx.fillStyle=MUT;
+  ctx.fillText("-1",pX+2,pY+pH+14);ctx.fillText("0",toX(0)-3,pY+pH+14);ctx.fillText("1",pX+pW-8,pY+pH+14);
+
+  // Loss chart
+  ctx.strokeStyle=BRD;ctx.lineWidth=1;ctx.strokeRect(lX,pY,lW,lH);
+  ctx.font="600 13px 'JetBrains Mono',monospace";ctx.fillStyle=TXT;
+  ctx.fillText("Loss",lX,pY-16);
+
+  if(hist.d.length>2){
+    const mx=300;
+    const dS=hist.d.slice(-mx),gS=hist.g.slice(-mx);
+    const all=[...dS,...gS];
+    let mn=Math.min(...all),mxV=Math.max(...all);
+    const mg=(mxV-mn)*.1||.5;mn-=mg;mxV+=mg;
+    const rng=mxV-mn||1;
+
+    const gr=ctx.createLinearGradient(lX,pY,lX,pY+lH);
+    gr.addColorStop(0,"rgba(46,232,165,0.03)");gr.addColorStop(1,"rgba(232,93,74,0.03)");
+    ctx.fillStyle=gr;ctx.fillRect(lX+1,pY+1,lW-2,lH-2);
+
+    const drawL=(a,c)=>{
+      ctx.strokeStyle=c;ctx.lineWidth=1.5;ctx.beginPath();
+      for(let i=0;i<a.length;i++){
+        const px=lX+(i/Math.max(a.length-1,1))*lW;
+        const py=pY+lH-((a[i]-mn)/rng)*lH;
+        i?ctx.lineTo(px,py):ctx.moveTo(px,py);
+      }ctx.stroke();
+    };
+    drawL(dS,REAL);drawL(gS,GEN);
+
+    ctx.font="10px 'JetBrains Mono',monospace";
+    ctx.fillStyle=REAL;ctx.fillText("D: "+dS[dS.length-1].toFixed(3),lX+8,pY+18);
+    ctx.fillStyle=GEN;ctx.fillText("G: "+gS[gS.length-1].toFixed(3),lX+lW/2+4,pY+18);
+
+    ctx.font="8px 'JetBrains Mono',monospace";ctx.fillStyle=MUT;
+    ctx.fillText(mxV.toFixed(1),lX+4,pY+lH-4);
+  }
+
+  // Epoch
+  ctx.font="bold 15px 'JetBrains Mono',monospace";ctx.fillStyle=MUT;
+  ctx.fillText("Época "+epoch,pX,pY+pH+35);
+  ctx.font="9px 'JetBrains Mono',monospace";
+  ctx.fillText("G: 32→128×4→2  ·  D: 2→128×3→1  ·  D-steps: 3  ·  batch: 256",pX+100,pY+pH+35);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  LOOP & CONTROLS
+// ══════════════════════════════════════════════════════════════
+
+function loop(){
+  if(!isTraining)return;
+  for(let s=0;s<speed;s++){
+    const{lD,lG}=trainStep();
+    dLoss=lD;gLoss=lG;
+  }
+  hist.d.push(dLoss);hist.g.push(gLoss);
+  epoch+=speed;
+  document.getElementById("dVal").textContent=dLoss.toFixed(3);
+  document.getElementById("gVal").textContent=gLoss.toFixed(3);
+  draw();
+  animId=requestAnimationFrame(loop);
+}
+
+function toggleTrain(){
+  isTraining=!isTraining;
+  const btn=document.getElementById("btnTrain");
+  if(isTraining){
+    btn.textContent="⏸ PAUSAR";btn.className="btn-train stop";
+    animId=requestAnimationFrame(loop);
+  }else{
+    btn.textContent="▶ TREINAR";btn.className="btn-train go";
+    if(animId)cancelAnimationFrame(animId);
+  }
+}
+
+function resetAll(){
+  isTraining=false;epoch=0;dLoss=0;gLoss=0;
+  const btn=document.getElementById("btnTrain");
+  btn.textContent="▶ TREINAR";btn.className="btn-train go";
+  if(animId)cancelAnimationFrame(animId);
+  document.getElementById("dVal").textContent="0.000";
+  document.getElementById("gVal").textContent="0.000";
+  initNets();
+  setTimeout(draw,30);
+}
+
+function selectFunc(name){
+  funcName=name;
+  document.querySelectorAll(".func-btn").forEach(b=>
+    b.classList.toggle("active",b.dataset.fn===name));
+  resetAll();
+}
+
+// Build buttons
+const bar=document.getElementById("funcBar");
+for(const name of Object.keys(FUNCS)){
+  const b=document.createElement("button");
+  b.className="func-btn"+(name===funcName?" active":"");
+  b.dataset.fn=name;
+  b.textContent=name;
+  b.onclick=()=>selectFunc(name);
+  bar.appendChild(b);
+}
+
+// Init
+initNets();
+draw();
+</script>
+</body>
+</html>
