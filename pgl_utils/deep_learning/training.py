@@ -1,7 +1,7 @@
 import os
 
 
-def set_reprodutibility(seed: int = DEFAULT_SEED) -> None:
+def set_reprodutibility(seed: int = 42) -> None:
     """
     Configure global determinism for reproducibility across Python, NumPy,
     and backend engine.
