@@ -137,6 +137,9 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# Embedded API key — generated at build time, never committed
+pgl_utils/_keys.py
+
 # MLflow
 mlruns/
 mlflow.db

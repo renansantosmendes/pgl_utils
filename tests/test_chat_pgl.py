@@ -78,7 +78,7 @@ class TestFetchAvailableModels:
         mock_response = MagicMock()
         mock_response.data = []
         with patch(f"{_LLM}.Groq") as mock_groq, \
-             patch(f"{_LLM}._PGL_API_KEY", "test-key"):
+             patch(f"{_LLM}._get_api_key", return_value="test-key"):
             mock_groq.return_value.models.list.return_value = mock_response
             from pgl_utils.genai.llm import _fetch_available_models
             _fetch_available_models()
@@ -151,10 +151,11 @@ class TestChatPGLInit:
         assert params["max_tokens"] == 1024
 
     def test_chat_groq_called_with_api_key(self, mock_chat_groq):
-        from pgl_utils.genai.llm import ChatPGL, _PGL_API_KEY
-        ChatPGL()
+        from pgl_utils.genai.llm import ChatPGL
+        with patch(f"{_LLM}._get_api_key", return_value="test-key"):
+            ChatPGL()
         _, kwargs = mock_chat_groq.call_args
-        assert kwargs["api_key"] == _PGL_API_KEY
+        assert kwargs["api_key"] == "test-key"
 
     def test_store_starts_empty(self, mock_chat_groq):
         from pgl_utils.genai.llm import ChatPGL

@@ -1,6 +1,6 @@
---extra-index-url https://download.pytorch.org/whl/cu126
- 
 # Deep Learning
+# Para instalar PyTorch com CUDA localmente, use:
+#   pip install -r requirements-torch-cuda.txt
 torch>=2.7.0
 torchvision
 torchaudio

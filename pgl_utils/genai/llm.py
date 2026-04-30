@@ -22,12 +22,23 @@ from langchain_groq import ChatGroq
 from pydantic import ConfigDict
 
 
-_PGL_API_KEY = os.environ.get("GROQ_API_KEY", "")
 _FALLBACK_MODEL = "llama-3.3-70b-versatile"
 
 
+def _get_api_key() -> Optional[str]:
+    key = os.environ.get("GROQ_API_KEY")
+    if key:
+        return key
+    try:
+        from pgl_utils._keys import GROQ_API_KEY as _embedded
+        return _embedded or None
+    except ImportError:
+        return None
+
+
 def _fetch_available_models() -> List:
-    client = Groq(api_key=_PGL_API_KEY)
+    api_key = _get_api_key()
+    client = Groq(api_key=api_key)
     models = client.models.list()
     return sorted(models.data, key=lambda m: m.created, reverse=True)
 
@@ -73,12 +84,20 @@ class ChatPGL(BaseChatModel):
                 )
         super().__init__(**kwargs)
 
+        api_key = _get_api_key()
+        if not api_key:
+            raise ValueError(
+                "GROQ_API_KEY não encontrada. "
+                "Defina a variável de ambiente antes de criar o ChatPGL:\n"
+                '  import os; os.environ["GROQ_API_KEY"] = "sua-chave"'
+            )
+
         self._store = {}
         self._client = ChatGroq(
             model=self.model,
             temperature=self.temperature,
             max_tokens=self.max_tokens,
-            api_key=_PGL_API_KEY,
+            api_key=api_key,
         )
         self._chain = self._build_chain()
 
