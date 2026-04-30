@@ -15,3 +15,12 @@ with _patch("groq.Groq") as _groq_mock:
     import pgl_utils.genai.llm  # noqa: E402
 
 del _mock_model, _groq_mock, _patch, MagicMock
+
+import pytest
+from unittest.mock import patch
+
+
+@pytest.fixture(autouse=True)
+def mock_api_key():
+    with patch("pgl_utils.genai.llm._get_api_key", return_value="test-key"):
+        yield
