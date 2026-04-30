@@ -47,6 +47,8 @@ jobs:
         continue-on-error: true
 
       - name: Run tests
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: uv run pytest tests/ -v --cov=pgl_utils --cov-report=xml --cov-report=term
 
       - name: Upload coverage reports
