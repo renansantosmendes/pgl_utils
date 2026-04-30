@@ -2,7 +2,6 @@
 Unit tests for ChatPGL class.
 All Groq / LangChain network calls are mocked — no real API key required.
 """
-import pgl_utils.genai.llm 
 import os
 from unittest.mock import MagicMock, patch
 

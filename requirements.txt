@@ -20,6 +20,7 @@ seaborn>=0.12.0
 # Generative AI (added based on llm.py imports)
 langchain-groq
 langchain-core
+langchain-community
 pydantic
  
 # Optional: Generative AI
