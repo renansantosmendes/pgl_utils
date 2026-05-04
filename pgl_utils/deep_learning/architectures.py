@@ -324,3 +324,212 @@ def plot_weight_distribution(weights, title):
     plt.ylabel("Frequência")
     plt.grid(True, alpha=0.3)
     plt.show()
+
+def identify_outliers(scores, percentile=95):
+    """
+    Identify outlier windows based on a percentile threshold.
+
+    Args:
+        scores: array of anomaly scores (one per window)
+        percentile: threshold percentile (e.g., 95 means top 5% are outliers)
+
+    Returns:
+        threshold: the computed threshold value
+        outlier_mask: boolean array (True = outlier)
+        outlier_indices: integer indices of outlier windows
+    """
+    threshold = np.percentile(scores, percentile)
+    outlier_mask = scores > threshold
+    outlier_indices = np.where(outlier_mask)[0]
+    return threshold, outlier_mask, outlier_indices
+
+
+def build_outlier_report(outlier_indices, reconstruction_error, kl_per_sample,
+                         combined_score, close_prices, window_size):
+    """
+    Build a detailed DataFrame with information about each outlier window.
+
+    For each outlier, shows the date range, anomaly scores, and price change
+    during that window — enabling correlation with real market events.
+    """
+    records = []
+    dates = close_prices.index
+
+    for idx in outlier_indices:
+        # A janela idx corresponde aos retornos de (idx+1) a (idx+window_size)
+        start_date = dates[idx + 1]
+        end_date = dates[idx + window_size]
+        start_price = close_prices.iloc[idx + 1]
+        end_price = close_prices.iloc[idx + window_size]
+        price_change_pct = ((end_price - start_price) / start_price) * 100
+
+        records.append({
+            'window_idx': idx,
+            'start_date': start_date.strftime('%Y-%m-%d'),
+            'end_date': end_date.strftime('%Y-%m-%d'),
+            'recon_error': round(reconstruction_error[idx], 4),
+            'kl_divergence': round(kl_per_sample[idx], 4),
+            'combined_score': round(combined_score[idx], 4),
+            'price_change_%': round(price_change_pct, 2),
+        })
+
+    df = pd.DataFrame(records)
+    df = df.sort_values('combined_score', ascending=False).reset_index(drop=True)
+    return df
+
+def plot_top_outlier_windows(model, windows_array, outlier_indices,
+                              combined_score, close_prices, n_top=6):
+    """
+    Plot the top-N most anomalous windows alongside their VAE reconstruction.
+
+    Each subplot shows the original return window (blue) vs the reconstructed
+    window (red dashed). Large gaps between the two indicate the specific
+    days within the window that the model found most unusual.
+    """
+    # Sort by combined score descending
+    sorted_idx = outlier_indices[np.argsort(combined_score[outlier_indices])[::-1]]
+    top_idx = sorted_idx[:n_top]
+
+    reconstructed, _, _ = model(windows_array, training=False)
+    reconstructed = reconstructed.numpy()
+
+    cols = 3
+    rows = (n_top + cols - 1) // cols
+    fig, axes = plt.subplots(rows, cols, figsize=(16, 4 * rows))
+    fig.suptitle(f'Top {n_top} janelas mais anômalas — Original vs Reconstrução',
+                 fontsize=13, fontweight='bold')
+    axes = axes.flatten()
+
+    dates = close_prices.index
+
+    for i, w_idx in enumerate(top_idx):
+        ax = axes[i]
+        original = windows_array[w_idx]
+        recon = reconstructed[w_idx]
+
+        ax.plot(original, linewidth=1.2, color='steelblue', label='Original')
+        ax.plot(recon, linewidth=1.2, color='firebrick', linestyle='--', label='Reconstruído')
+        ax.fill_between(range(len(original)), original, recon,
+                        alpha=0.15, color='firebrick')
+
+        start_date = dates[w_idx + 1].strftime('%Y-%m-%d')
+        end_date = dates[w_idx + WINDOW_SIZE].strftime('%Y-%m-%d')
+        score = combined_score[w_idx]
+
+        ax.set_title(f'{start_date} → {end_date}\nscore: {score:.2f}', fontsize=9)
+        ax.legend(fontsize=7)
+        ax.grid(alpha=0.3)
+        ax.set_xlabel('Dia na janela', fontsize=8)
+        ax.set_ylabel('Retorno (norm.)', fontsize=8)
+
+    # Hide unused axes
+    for j in range(i + 1, len(axes)):
+        axes[j].set_visible(False)
+
+    plt.tight_layout()
+    plt.show()
+
+    if 'MLFLOW_RUN_ID' in globals():
+        with mlflow.start_run(run_id=MLFLOW_RUN_ID):
+            mlflow.log_figure(fig, 'plots/top_outlier_windows.png')
+            
+def plot_outlier_detection(
+    close_prices,
+    reconstruction_error,
+    kl_per_sample,
+    threshold_recon,
+    idx_recon,
+    idx_comb,
+    mask_comb,
+    ticker,
+    window_size,
+    percentile_threshold,
+    mlflow_run_id=None,
+):
+    """Plot a 4-panel outlier detection dashboard for a VAE-based anomaly detector.
+
+    Panels:
+        [0,0] Reconstruction error time series with threshold line and flagged outliers.
+        [0,1] Price history with outlier windows overlaid.
+        [1,0] Histogram of reconstruction errors with threshold.
+        [1,1] Scatter of reconstruction error vs KL divergence.
+
+    Args:
+        close_prices: pd.Series of closing prices (DatetimeIndex).
+        reconstruction_error: 1-D array of per-window MAE values.
+        kl_per_sample: 1-D array of per-window KL divergence values.
+        threshold_recon: scalar threshold for the reconstruction error.
+        idx_recon: integer indices of outlier windows (reconstruction criterion).
+        idx_comb: integer indices of outlier windows (combined criterion).
+        mask_comb: boolean array (True = outlier by combined criterion).
+        ticker: string with the asset ticker symbol.
+        window_size: int, size of the sliding window used to build samples.
+        percentile_threshold: int, percentile used to define the threshold.
+        mlflow_run_id: optional MLflow run ID to log the figure as an artifact.
+
+    Returns:
+        The matplotlib Figure object.
+    """
+    dates = close_prices.index[window_size + 1:]
+
+    fig, axes = plt.subplots(2, 2, figsize=(16, 10))
+    fig.suptitle(f'Detecção de Outliers — {ticker} (VAE)', fontsize=14, fontweight='bold')
+
+    # ── Painel 1: Série temporal do erro de reconstrução ──
+    ax = axes[0, 0]
+    ax.plot(dates, reconstruction_error, linewidth=0.6, alpha=0.8, color='steelblue')
+    ax.axhline(threshold_recon, color='firebrick', linestyle='--', linewidth=1,
+               label=f'Threshold (p{percentile_threshold}): {threshold_recon:.4f}')
+    ax.scatter(dates[idx_recon], reconstruction_error[idx_recon],
+               color='firebrick', s=20, zorder=5, label=f'Outliers ({len(idx_recon)})')
+    ax.set_title('Erro de reconstrução ao longo do tempo')
+    ax.set_ylabel('MAE')
+    ax.legend(fontsize=8)
+    ax.grid(alpha=0.3)
+
+    # ── Painel 2: Preço com outliers sobrepostos ──
+    ax = axes[0, 1]
+    ax.plot(close_prices.index, close_prices.values, linewidth=0.8, color='steelblue', label='Preço')
+    outlier_dates = dates[idx_comb]
+    outlier_prices = close_prices.reindex(outlier_dates)
+    ax.scatter(outlier_prices.index, outlier_prices.values,
+               color='firebrick', s=25, zorder=5, label=f'Outliers ({len(idx_comb)})')
+    ax.set_title(f'Preço de {ticker} com outliers marcados')
+    ax.set_ylabel('Preço (USD)')
+    ax.legend(fontsize=8)
+    ax.grid(alpha=0.3)
+
+    # ── Painel 3: Distribuição dos scores ──
+    ax = axes[1, 0]
+    ax.hist(reconstruction_error, bins=50, alpha=0.6, color='steelblue',
+            edgecolor='white', label='Reconstrução')
+    ax.axvline(threshold_recon, color='firebrick', linestyle='--', linewidth=1.5,
+               label=f'Threshold (p{percentile_threshold})')
+    ax.set_title('Distribuição do erro de reconstrução')
+    ax.set_xlabel('MAE')
+    ax.set_ylabel('Frequência')
+    ax.legend(fontsize=8)
+    ax.grid(alpha=0.3)
+
+    # ── Painel 4: Scatter reconstrução × KL ──
+    ax = axes[1, 1]
+    normal_mask = ~mask_comb
+    ax.scatter(reconstruction_error[normal_mask], kl_per_sample[normal_mask],
+               alpha=0.3, s=8, color='steelblue', label='Normal')
+    ax.scatter(reconstruction_error[mask_comb], kl_per_sample[mask_comb],
+               alpha=0.8, s=25, color='firebrick', label='Outlier',
+               edgecolors='darkred', linewidths=0.5)
+    ax.set_title('Reconstrução × KL divergence')
+    ax.set_xlabel('Erro de reconstrução (MAE)')
+    ax.set_ylabel('KL divergence')
+    ax.legend(fontsize=8)
+    ax.grid(alpha=0.3)
+
+    plt.tight_layout()
+    plt.show()
+
+    if mlflow_run_id is not None:
+        with mlflow.start_run(run_id=mlflow_run_id):
+            mlflow.log_figure(fig, 'plots/outlier_detection.png')
+
+    return fig
