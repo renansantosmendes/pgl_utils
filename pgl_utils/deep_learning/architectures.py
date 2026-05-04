@@ -2,7 +2,11 @@
 Deep Learning model architectures
 """
 
+from typing import Optional
+
 import numpy as np
+import pandas as pd
+import mlflow
 import networkx as nx
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -10,12 +14,12 @@ from tensorflow import keras
 
 
 def draw_neural_network(
-        model, 
-        max_nodes_per_layer=20, 
-        show_input_layer=True,
-        show_weights=False,
-        figsize=None,
-        ) -> None:
+    model: keras.Model,
+    max_nodes_per_layer: int = 20,
+    show_input_layer: bool = True,
+    show_weights: bool = False,
+    figsize: Optional[tuple[float, float]] = None,
+) -> None:
     """
     Draw a visual representation of a neural network architecture.
 
@@ -41,8 +45,6 @@ def draw_neural_network(
     None
         Displays the network architecture plot
     """
-    import numpy as np
-
     G = nx.DiGraph()
 
     layers = []
@@ -232,7 +234,9 @@ def placeholder():
     return "DL architectures utilities"
 
 
-def plot_convergence(history):
+def plot_convergence(
+    history: keras.callbacks.History,
+):
     """
     Plot the convergence of training and validation loss over epochs.
 
@@ -261,7 +265,9 @@ def plot_convergence(history):
     plt.show()
 
 
-def get_all_weights(model):
+def get_all_weights(
+    model: keras.Model,
+):
     """
     Extract all weights from all layers of a neural network model.
 
@@ -292,7 +298,10 @@ def get_all_weights(model):
     return np.concatenate(weights_list)
 
 
-def plot_weight_distribution(weights, title):
+def plot_weight_distribution(
+    weights: np.ndarray,
+    title: str,
+):
     """
     Plot the distribution of neural network weights as a histogram.
 
@@ -325,7 +334,10 @@ def plot_weight_distribution(weights, title):
     plt.grid(True, alpha=0.3)
     plt.show()
 
-def identify_outliers(scores, percentile=95):
+def identify_outliers(
+    scores: np.ndarray,
+    percentile: int = 95,
+):
     """
     Identify outlier windows based on a percentile threshold.
 
@@ -344,8 +356,14 @@ def identify_outliers(scores, percentile=95):
     return threshold, outlier_mask, outlier_indices
 
 
-def build_outlier_report(outlier_indices, reconstruction_error, kl_per_sample,
-                         combined_score, close_prices, window_size):
+def build_outlier_report(
+    outlier_indices: np.ndarray,
+    reconstruction_error: np.ndarray,
+    kl_per_sample: np.ndarray,
+    combined_score: np.ndarray,
+    close_prices: pd.Series,
+    window_size: int,
+):
     """
     Build a detailed DataFrame with information about each outlier window.
 
@@ -377,8 +395,15 @@ def build_outlier_report(outlier_indices, reconstruction_error, kl_per_sample,
     df = df.sort_values('combined_score', ascending=False).reset_index(drop=True)
     return df
 
-def plot_top_outlier_windows(model, windows_array, outlier_indices,
-                              combined_score, close_prices, n_top=6):
+def plot_top_outlier_windows(
+    model: keras.Model,
+    windows_array: np.ndarray,
+    outlier_indices: np.ndarray,
+    combined_score: np.ndarray,
+    close_prices: pd.Series,
+    window_size: int,
+    n_top: int = 6,
+):
     """
     Plot the top-N most anomalous windows alongside their VAE reconstruction.
 
@@ -413,7 +438,7 @@ def plot_top_outlier_windows(model, windows_array, outlier_indices,
                         alpha=0.15, color='firebrick')
 
         start_date = dates[w_idx + 1].strftime('%Y-%m-%d')
-        end_date = dates[w_idx + WINDOW_SIZE].strftime('%Y-%m-%d')
+        end_date = dates[w_idx + window_size].strftime('%Y-%m-%d')
         score = combined_score[w_idx]
 
         ax.set_title(f'{start_date} → {end_date}\nscore: {score:.2f}', fontsize=9)
@@ -434,17 +459,17 @@ def plot_top_outlier_windows(model, windows_array, outlier_indices,
             mlflow.log_figure(fig, 'plots/top_outlier_windows.png')
             
 def plot_outlier_detection(
-    close_prices,
-    reconstruction_error,
-    kl_per_sample,
-    threshold_recon,
-    idx_recon,
-    idx_comb,
-    mask_comb,
-    ticker,
-    window_size,
-    percentile_threshold,
-    mlflow_run_id=None,
+    close_prices: pd.Series,
+    reconstruction_error: np.ndarray,
+    kl_per_sample: np.ndarray,
+    threshold_recon: float,
+    idx_recon: np.ndarray,
+    idx_comb: np.ndarray,
+    mask_comb: np.ndarray,
+    ticker: str,
+    window_size: int,
+    percentile_threshold: int,
+    mlflow_run_id: Optional[str] = None,
 ):
     """Plot a 4-panel outlier detection dashboard for a VAE-based anomaly detector.
 
