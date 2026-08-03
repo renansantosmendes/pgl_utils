@@ -78,6 +78,19 @@ from pgl_utils.genai import llm, rag
 # Your code here
 ```
 
+### Using the PGL Search Gateway
+
+```python
+from pgl_utils.genai.search_gateway import PGLSearchGateway
+
+gateway = PGLSearchGateway()
+results = gateway.search(
+    "inteligência artificial generativa",
+    search_depth="advanced",
+    include_raw_content=True,
+)
+```
+
 ### Institution-Specific Tools
 
 #### For PUC Students
@@ -116,7 +129,8 @@ pgl_utils/
 │   ├── genai/                      # Generative AI module
 │   │   ├── __init__.py
 │   │   ├── llm.py
-│   │   └── rag.py
+│   │   ├── rag.py
+│   │   └── search_gateway.py
 │   ├── puc/                        # PUC-specific extensions
 │   │   ├── __init__.py
 │   │   └── config.py
