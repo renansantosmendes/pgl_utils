@@ -2,13 +2,8 @@ name: Publish to PyPI
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'pgl_utils/**'
-      - 'setup.py'
-      - 'pyproject.toml'
-      - '.github/workflows/publish-to-pypi.yml'
+    tags:
+      - 'v*'
 
 jobs:
   test:
@@ -47,10 +42,7 @@ jobs:
   build-and-publish:
     needs: test
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -68,12 +60,6 @@ jobs:
       - name: Install build dependencies
         run: uv pip install build twine wheel setuptools
 
-      - name: Get version
-        id: version
-        run: |
-          VERSION=$(uv run python -c "import re; content=open('setup.py').read(); match=re.search(r\"version=['\\\"]([^'\\\"]+)['\\\"]\", content); print(match.group(1) if match else '0.1.0')")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
       - name: Inject API key
         run: echo 'GROQ_API_KEY = "${{ secrets.GROQ_API_KEY }}"' > pgl_utils/_keys.py
 
@@ -82,25 +68,8 @@ jobs:
 
       - name: Check distribution
         run: uv run twine check dist/*
-      
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
-      
-      - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          release_name: Release v${{ steps.version.outputs.version }}
-          body: |
-            Published to PyPI: https://pypi.org/project/pgl-utils/${{ steps.version.outputs.version }}/
-            
-            Install with:
-            ```bash
-            pip install pgl-utils==${{ steps.version.outputs.version }}
-            ```
-          draft: false
-          prerelease: false
