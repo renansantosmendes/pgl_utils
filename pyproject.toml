@@ -44,7 +44,6 @@ Issues = "https://github.com/renansantosmendes/pgl_utils/issues"
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
 version_variables = ["setup.py:version"]
-build_command = false
 commit_message = "chore(release): {version} [skip ci]"
 tag_format = "v{version}"
 major_on_zero = false
