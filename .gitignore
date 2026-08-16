@@ -176,3 +176,6 @@ checkpoints/
 # *.csv
 # *.parquet
 # data/
+
+# Draft files
+**/draft.py

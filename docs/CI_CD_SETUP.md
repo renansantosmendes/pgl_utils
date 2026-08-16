@@ -20,11 +20,16 @@ The project uses **GitHub Actions** to:
 - Runs type checking with mypy
 - Uploads coverage reports to Codecov
 
-### 2. `publish-to-pypi.yml` - Automated Publishing
+### 2. `release.yml` - Automated Versioning
+- Runs on every push to `main`
+- Analyzes Conventional Commit messages since the last release
+- Bumps the version in `pyproject.toml`/`setup.py`, updates `CHANGELOG.md`, tags the commit (`vX.Y.Z`), and creates the GitHub Release
+- Skips itself when there's nothing releasable, or when the triggering commit is its own `chore(release):` commit (avoids loops)
+
+### 3. `publish-to-pypi.yml` - Automated Publishing
+- Triggers on the `vX.Y.Z` tag created by `release.yml`
 - Runs tests first
-- Publishes to PyPI **only** when merged to `main`
-- Creates GitHub Release automatically
-- Uses versioning from `setup.py`
+- Builds and publishes the package to PyPI
 
 ## Setup Instructions
 
@@ -96,8 +101,7 @@ Steps:
 ### Publishing Workflow (`publish-to-pypi.yml`)
 
 Runs on:
-- Push to `main` only
-- Changes to `post_graduation_utils/`, `setup.py`, or `pyproject.toml`
+- Push of a `vX.Y.Z` tag (created automatically by `release.yml`)
 
 Steps:
 1. **Run all tests** (matrix test job) - must pass!
@@ -110,52 +114,35 @@ Steps:
 
 ## Versioning
 
-The version is extracted from `setup.py`:
+Versioning is fully automated with **[python-semantic-release](https://python-semantic-release.readthedocs.io/)**, driven by
+[Conventional Commits](https://www.conventionalcommits.org/) on `main`. There is nothing to bump by hand.
 
-```python
-setup(
-    name="post-graduation-utils",
-    version="0.1.0",  # ← Update this for releases
-    ...
-)
-```
+The commit prefix on your PR determines the bump:
 
-When you update the version:
-1. Modify `version="X.Y.Z"` in `setup.py`
-2. Commit and push to `main`
-3. Workflow automatically:
-   - Runs tests
-   - Publishes to PyPI
-   - Creates GitHub Release `vX.Y.Z`
+| Commit prefix | Bump | Example |
+|---|---|---|
+| `fix:` | patch (`0.1.12` → `0.1.13`) | `fix: correct off-by-one in sliding window` |
+| `feat:` | minor (`0.1.12` → `0.2.0`) | `feat: add plot_full_sliding_progress` |
+| `BREAKING CHANGE:` in body/footer, or `feat!:`/`fix!:` | major* | `feat!: rename fetch_price_series signature` |
+| `chore:`, `docs:`, `refactor:`, `test:`, `ci:` | no release | `docs: fix README typo` |
 
-## Manual Release Workflow
+\* While the package is `0.x`, `major_on_zero = false` keeps breaking changes bumping the **minor** version instead of jumping to `1.0.0`
+(see `[tool.semantic_release]` in `pyproject.toml`).
 
-### To release a new version:
+### What happens when a PR is merged to `main`
 
-1. **Update version in `setup.py`**
-   ```python
-   setup(
-       name="post-graduation-utils",
-       version="0.2.0",  # Bumped from 0.1.0
-       ...
-   )
-   ```
+1. **`release.yml`** runs, inspects commits since the last tag, and — if there's a releasable change:
+   - bumps `version` in `pyproject.toml` and `setup.py`
+   - updates `CHANGELOG.md`
+   - commits as `chore(release): X.Y.Z [skip ci]` and pushes a `vX.Y.Z` tag
+   - creates the GitHub Release
+2. The new tag triggers **`publish-to-pypi.yml`**, which runs the tests, builds the package, and publishes to PyPI.
 
-2. **Commit and push to main**
-   ```bash
-   git commit -am "Bump version to 0.2.0"
-   git push origin main
-   ```
+If a merge doesn't contain any `feat:`/`fix:`/breaking-change commits (e.g. only `docs:`/`chore:`), no release is created and nothing is published — as intended.
 
-3. **GitHub Actions automatically**:
-   - Runs all tests
-   - Builds package
-   - Publishes to PyPI
-   - Creates release on GitHub
+### Manually triggering a release
 
-4. **Verify on PyPI**
-   - Check [https://pypi.org/project/post-graduation-utils/](https://pypi.org/project/post-graduation-utils/)
-   - Should see new version
+You normally never need to do this — just merge a PR with a Conventional Commit message and the pipeline handles the rest.
 
 ## Testing Locally
 
