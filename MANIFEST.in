@@ -4,3 +4,4 @@ include requirements.txt
 recursive-include docs *
 recursive-include examples *
 recursive-include tests *
+recursive-include pgl_utils *.json
