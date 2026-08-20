@@ -70,6 +70,30 @@ from pgl_utils.deep_learning import draw_neural_network
 # Your code here
 ```
 
+#### Curated Stock Ticker Lists
+
+`pgl_utils.deep_learning` ships curated lists of B3 (Brazil) and US stock tickers, grouped by
+sector, for use in time series / financial deep learning examples. They are bundled as JSON
+resources and loaded via `load_brazil_tickers()` / `load_us_tickers()`, so they work both in a
+dev checkout and after installing the package with pip.
+
+```python
+from pgl_utils.deep_learning import load_brazil_tickers, load_us_tickers
+
+brazil_tickers = load_brazil_tickers()
+us_tickers = load_us_tickers()
+
+# Each function returns a dict keyed by sector (snake_case), mapping to a list of tickers
+brazil_tickers["bancos_servicos_financeiros"]
+# ["ITUB4.SA", "ITUB3.SA", "BBDC4.SA", ...]
+
+us_tickers["tecnologia"]
+# ["AAPL", "MSFT", "GOOGL", ...]
+```
+
+The underlying JSON files live at `pgl_utils/deep_learning/data/brazil_tickers.json` and
+`pgl_utils/deep_learning/data/us_tickers.json`.
+
 ### Using Generative AI Tools
 
 ```python
@@ -125,7 +149,9 @@ pgl_utils/
 │   ├── deep_learning/              # Deep Learning module
 │   │   ├── __init__.py
 │   │   ├── architectures.py
-│   │   └── training.py
+│   │   ├── training.py
+│   │   ├── tickers.py              # Brazil/US ticker loaders
+│   │   └── data/                   # brazil_tickers.json, us_tickers.json
 │   ├── genai/                      # Generative AI module
 │   │   ├── __init__.py
 │   │   ├── llm.py
