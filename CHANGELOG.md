@@ -1,6 +1,51 @@
 # CHANGELOG
 
 
+## v0.3.0 (2026-08-20)
+
+### Bug Fixes
+
+- Publish to PyPI in the same run as the version release
+  ([`9175236`](https://github.com/renansantosmendes/pgl_utils/commit/9175236ce1f8b554343df43349229bdc424e997a))
+
+GITHUB_TOKEN-authored tag pushes from python-semantic-release don't trigger other workflows (GitHub
+  Actions loop-prevention), so publish-to-pypi.yml never fired after release.yml tagged v0.2.0.
+  Publishing now happens in a `publish` job inside release.yml, gated on release.outputs.released,
+  so it runs in the same workflow run as the bump. publish-to-pypi.yml is kept as a manual
+  workflow_dispatch fallback to catch up any release that was tagged but never published.
+
+### Documentation
+
+- Document curated ticker list loaders
+  ([`3e1beea`](https://github.com/renansantosmendes/pgl_utils/commit/3e1beeadce49868ef60762800a7d276aa510d7b2))
+
+Adds README coverage for load_brazil_tickers()/load_us_tickers(), including the JSON resource paths
+  and the snake_case sector keys.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+### Features
+
+- Add curated Brazil and US stock ticker lists
+  ([`41b473c`](https://github.com/renansantosmendes/pgl_utils/commit/41b473cd24ff19dca93fe1f6bd840be3013a491a))
+
+Adds JSON resources with B3 and US tickers grouped by sector, plus
+  load_brazil_tickers()/load_us_tickers() helpers exposed from pgl_utils.deep_learning so they can
+  be imported once the package is installed (resources are loaded via importlib.resources).
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+### Refactoring
+
+- Use snake_case keys in ticker JSON files
+  ([`9341403`](https://github.com/renansantosmendes/pgl_utils/commit/934140352e98cc371b54b095d4942a1776b8827a))
+
+Sector names were plain Portuguese labels with accents and spaces, inconvenient as dict keys.
+  Renamed to snake_case identifiers, e.g. "Alimentos / bebidas" -> "alimentos_bebidas".
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+
 ## v0.2.0 (2026-08-16)
 
 ### Bug Fixes
