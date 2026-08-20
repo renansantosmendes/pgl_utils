@@ -1,5 +1,5 @@
 {
-  "Petróleo, gás e energia": [
+  "petroleo_gas_energia": [
     "PETR3.SA",
     "PETR4.SA",
     "PRIO3.SA",
@@ -16,7 +16,7 @@
     "TAEE11.SA",
     "CPFE3.SA"
   ],
-  "Mineração, siderurgia e materiais": [
+  "mineracao_siderurgia_materiais": [
     "VALE3.SA",
     "GGBR4.SA",
     "GOAU4.SA",
@@ -27,7 +27,7 @@
     "KLBN11.SA",
     "DXCO3.SA"
   ],
-  "Bancos e serviços financeiros": [
+  "bancos_servicos_financeiros": [
     "ITUB4.SA",
     "ITUB3.SA",
     "BBDC4.SA",
@@ -41,7 +41,7 @@
     "PSSA3.SA",
     "CXSE3.SA"
   ],
-  "Consumo e varejo": [
+  "consumo_varejo": [
     "ABEV3.SA",
     "MGLU3.SA",
     "LREN3.SA",
@@ -55,7 +55,7 @@
     "BHIA3.SA",
     "VIVA3.SA"
   ],
-  "Alimentos e bebidas": [
+  "alimentos_bebidas": [
     "JBSS3.SA",
     "BRFS3.SA",
     "MRFG3.SA",
@@ -64,7 +64,7 @@
     "CAML3.SA",
     "SMTO3.SA"
   ],
-  "Indústria e tecnologia": [
+  "industria_tecnologia": [
     "WEGE3.SA",
     "EMBR3.SA",
     "TOTS3.SA",
@@ -74,7 +74,7 @@
     "LEVE3.SA",
     "POMO4.SA"
   ],
-  "Transporte, logística e locação": [
+  "transporte_logistica_locacao": [
     "RENT3.SA",
     "RAIL3.SA",
     "AZUL4.SA",
@@ -84,7 +84,7 @@
     "MOVI3.SA",
     "JSLG3.SA"
   ],
-  "Construção e imobiliário": [
+  "construcao_imobiliario": [
     "CYRE3.SA",
     "MRVE3.SA",
     "EZTC3.SA",
@@ -96,7 +96,7 @@
     "IGTI11.SA",
     "ALOS3.SA"
   ],
-  "Saúde": [
+  "saude": [
     "RDOR3.SA",
     "HAPV3.SA",
     "FLRY3.SA",
@@ -105,11 +105,11 @@
     "ODPV3.SA",
     "PFRM3.SA"
   ],
-  "Telecom": [
+  "telecom": [
     "VIVT3.SA",
     "TIMS3.SA"
   ],
-  "Agronegócio e outros": [
+  "agronegocio_outros": [
     "SLCE3.SA",
     "RAIZ4.SA",
     "AGRO3.SA",

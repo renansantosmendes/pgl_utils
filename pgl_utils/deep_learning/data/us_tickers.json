@@ -1,5 +1,5 @@
 {
-  "Tecnologia": [
+  "tecnologia": [
     "AAPL",
     "MSFT",
     "GOOGL",
@@ -26,7 +26,7 @@
     "SNPS",
     "CDNS"
   ],
-  "Internet / software": [
+  "internet_software": [
     "NFLX",
     "UBER",
     "ABNB",
@@ -38,7 +38,7 @@
     "NET",
     "DDOG"
   ],
-  "Financeiro": [
+  "financeiro": [
     "JPM",
     "BAC",
     "WFC",
@@ -53,7 +53,7 @@
     "COF",
     "USB"
   ],
-  "Consumo": [
+  "consumo": [
     "WMT",
     "COST",
     "TGT",
@@ -66,7 +66,7 @@
     "TMO",
     "BKNG"
   ],
-  "Alimentos / bebidas": [
+  "alimentos_bebidas": [
     "KO",
     "PEP",
     "PM",
@@ -75,7 +75,7 @@
     "KHC",
     "GIS"
   ],
-  "Saúde": [
+  "saude": [
     "JNJ",
     "PFE",
     "MRK",
@@ -87,7 +87,7 @@
     "BMY",
     "CVS"
   ],
-  "Energia": [
+  "energia": [
     "XOM",
     "CVX",
     "COP",
@@ -96,7 +96,7 @@
     "MPC",
     "PSX"
   ],
-  "Indústria": [
+  "industria": [
     "CAT",
     "DE",
     "GE",
@@ -106,17 +106,17 @@
     "BA",
     "LMT"
   ],
-  "Telecom": [
+  "telecom": [
     "T",
     "VZ",
     "TMUS"
   ],
-  "Automóveis": [
+  "automoveis": [
     "TSLA",
     "F",
     "GM"
   ],
-  "Outros": [
+  "outros": [
     "DIS",
     "CMCSA"
   ]
