@@ -1,0 +1,123 @@
+{
+  "tecnologia": [
+    "AAPL",
+    "MSFT",
+    "GOOGL",
+    "GOOG",
+    "AMZN",
+    "META",
+    "NVDA",
+    "AVGO",
+    "AMD",
+    "INTC",
+    "QCOM",
+    "MU",
+    "CSCO",
+    "ORCL",
+    "CRM",
+    "ADBE",
+    "NOW",
+    "INTU",
+    "AMAT",
+    "LRCX",
+    "TXN",
+    "ADI",
+    "PANW",
+    "SNPS",
+    "CDNS"
+  ],
+  "internet_software": [
+    "NFLX",
+    "UBER",
+    "ABNB",
+    "SHOP",
+    "PYPL",
+    "SQ",
+    "PLTR",
+    "CRWD",
+    "NET",
+    "DDOG"
+  ],
+  "financeiro": [
+    "JPM",
+    "BAC",
+    "WFC",
+    "C",
+    "GS",
+    "MS",
+    "BLK",
+    "SCHW",
+    "AXP",
+    "V",
+    "MA",
+    "COF",
+    "USB"
+  ],
+  "consumo": [
+    "WMT",
+    "COST",
+    "TGT",
+    "HD",
+    "LOW",
+    "MCD",
+    "SBUX",
+    "NKE",
+    "TJX",
+    "TMO",
+    "BKNG"
+  ],
+  "alimentos_bebidas": [
+    "KO",
+    "PEP",
+    "PM",
+    "MO",
+    "MDLZ",
+    "KHC",
+    "GIS"
+  ],
+  "saude": [
+    "JNJ",
+    "PFE",
+    "MRK",
+    "ABBV",
+    "LLY",
+    "UNH",
+    "AMGN",
+    "GILD",
+    "BMY",
+    "CVS"
+  ],
+  "energia": [
+    "XOM",
+    "CVX",
+    "COP",
+    "SLB",
+    "EOG",
+    "MPC",
+    "PSX"
+  ],
+  "industria": [
+    "CAT",
+    "DE",
+    "GE",
+    "HON",
+    "UPS",
+    "RTX",
+    "BA",
+    "LMT"
+  ],
+  "telecom": [
+    "T",
+    "VZ",
+    "TMUS"
+  ],
+  "automoveis": [
+    "TSLA",
+    "F",
+    "GM"
+  ],
+  "outros": [
+    "DIS",
+    "CMCSA"
+  ]
+}

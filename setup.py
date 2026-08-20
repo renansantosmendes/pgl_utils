@@ -47,5 +47,6 @@ setup(
         ],
     },
     include_package_data=True,
+    package_data={"pgl_utils.deep_learning.data": ["*.json"]},
     zip_safe=False,
 )
