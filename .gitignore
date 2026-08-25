@@ -177,5 +177,5 @@ checkpoints/
 # *.parquet
 # data/
 
-# Draft files
-**/draft.py
+# Draft files (any extension, term anywhere in the filename)
+**/*draft*
