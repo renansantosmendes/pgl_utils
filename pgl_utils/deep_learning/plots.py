@@ -254,3 +254,30 @@ def plot_full_sliding_progress(
         template="plotly_white",
     )
     return figure
+
+
+def plot_loss_curve(
+    loss_history: list[float],
+    chart_title: str,
+    loss_series_name: str = "Loss de treino",
+) -> go.Figure:
+    """Plot a training loss curve across epochs."""
+    epoch_axis = np.arange(1, len(loss_history) + 1)
+
+    figure = go.Figure()
+    figure.add_trace(
+        go.Scatter(
+            x=epoch_axis,
+            y=loss_history,
+            mode="lines+markers",
+            name=loss_series_name,
+            line=dict(color="royalblue"),
+        )
+    )
+    figure.update_layout(
+        title=chart_title,
+        xaxis_title="Época",
+        yaxis_title="Loss",
+        template="plotly_white",
+    )
+    return figure

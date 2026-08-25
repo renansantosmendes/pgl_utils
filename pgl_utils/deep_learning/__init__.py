@@ -10,6 +10,7 @@ from .plots import (
     plot_histogram_with_normal_curve,
     plot_sliding_window,
     plot_full_sliding_progress,
+    plot_loss_curve,
 )
 from .tickers import load_brazil_tickers, load_us_tickers
 
@@ -21,6 +22,7 @@ __all__ = [
     "plot_histogram_with_normal_curve",
     "plot_sliding_window",
     "plot_full_sliding_progress",
+    "plot_loss_curve",
     "load_brazil_tickers",
     "load_us_tickers",
 ]
