@@ -13,6 +13,7 @@ from .plots import (
     format_price_axis,
     plot_real_vs_synthetic_continuation,
     plot_paths_grid,
+    plot_loss_curve,
 )
 from .tickers import load_brazil_tickers, load_us_tickers
 
@@ -27,6 +28,7 @@ __all__ = [
     "format_price_axis",
     "plot_real_vs_synthetic_continuation",
     "plot_paths_grid",
+    "plot_loss_curve",
     "load_brazil_tickers",
     "load_us_tickers",
 ]

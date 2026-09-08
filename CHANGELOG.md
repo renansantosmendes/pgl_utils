@@ -1,6 +1,50 @@
 # CHANGELOG
 
 
+## v0.4.0 (2026-08-25)
+
+### Bug Fixes
+
+- Correct broken draft files gitignore pattern
+  ([`21f666f`](https://github.com/renansantosmendes/pgl_utils/commit/21f666f263f4711caeaf668b4680543f086d40d5))
+
+**draft only matched paths ending exactly in "draft" with no extension, so files like draft.py or
+  pytorch_tensores_draft.py were never actually ignored. Use **/*draft* to match the term anywhere
+  in the filename, any extension.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+### Chores
+
+- Add tqdm and ipywidgets to requirements
+  ([`481a10b`](https://github.com/renansantosmendes/pgl_utils/commit/481a10bde6ef4b11e53236d7597b295f36bd1a2e))
+
+Needed by the PyTorch practice notebook, which now renders training progress with tqdm.auto's
+  notebook widget bar (requires ipywidgets to render as a widget instead of falling back to plain
+  text).
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+- Ignore any file containing "draft" in its name
+  ([`8f80f5d`](https://github.com/renansantosmendes/pgl_utils/commit/8f80f5d8e77d3e21321cb18a9cb7b04243b805d2))
+
+Broaden the existing **/draft.py rule to **/*draft*, matching the term anywhere in the filename
+  regardless of extension.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+### Features
+
+- Add plot_loss_curve for training loss curves
+  ([`9e33857`](https://github.com/renansantosmendes/pgl_utils/commit/9e3385739dd55abaef50ae87fed7fbd86f3ccd0d))
+
+Extracts the ad-hoc training loss plotting logic used in the PyTorch practice notebook into a
+  reusable Plotly-based helper, following the same style as the other pgl_utils.deep_learning.plots
+  functions.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+
 ## v0.3.0 (2026-08-20)
 
 ### Bug Fixes
