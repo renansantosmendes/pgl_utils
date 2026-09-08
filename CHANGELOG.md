@@ -1,6 +1,37 @@
 # CHANGELOG
 
 
+## v0.5.0 (2026-09-08)
+
+### Bug Fixes
+
+- Bump version
+  ([`b0a02c2`](https://github.com/renansantosmendes/pgl_utils/commit/b0a02c252012534f3e6c4da0cbdb87407b789f91))
+
+### Chores
+
+- Add torchinfo to requirements
+  ([`99762cc`](https://github.com/renansantosmendes/pgl_utils/commit/99762cc89794bd137efad36b5c1991f3dd3b7067))
+
+Used by the PyTorch practice notebook to print a layer-by-layer summary of the regression model
+  (shapes, param counts, memory estimate).
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+- Add wandb to requirements
+  ([`ba28185`](https://github.com/renansantosmendes/pgl_utils/commit/ba281858406f0f54ad9c388959194b5549003655))
+
+Used by the PyTorch practice notebook for minimal experiment tracking (train loss per epoch), with a
+  graceful fallback to disabled mode when no API key/terminal is available.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+### Features
+
+- Bump version
+  ([`7306e09`](https://github.com/renansantosmendes/pgl_utils/commit/7306e09c8ba4f45e0961ce4f3e50e58ee12b970e))
+
+
 ## v0.4.0 (2026-08-25)
 
 ### Bug Fixes
