@@ -404,6 +404,8 @@ def plot_paths_grid(
     figure.savefig(output_path, dpi=130, bbox_inches="tight")
     plt.show()
     plt.close(figure)
+    
+    
 def plot_loss_curve(
     loss_history: list[float],
     chart_title: str,
