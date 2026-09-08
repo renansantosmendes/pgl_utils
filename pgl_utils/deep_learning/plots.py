@@ -4,6 +4,8 @@ Plotting utilities for time series / tensor practice notebooks.
 
 from __future__ import annotations
 
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -254,3 +256,151 @@ def plot_full_sliding_progress(
         template="plotly_white",
     )
     return figure
+
+
+def format_price_axis(axis: plt.Axes) -> None:
+    """Format a matplotlib axis to display values as US dollars."""
+    axis.yaxis.set_major_formatter(
+        mticker.FuncFormatter(lambda value, _: f"US$ {value:,.2f}")
+    )
+
+
+def plot_real_vs_synthetic_continuation(
+    return_dates: pd.DatetimeIndex,
+    log_returns: np.ndarray,
+    price_index: pd.DatetimeIndex,
+    price_values: np.ndarray,
+    synthetic_dates: pd.DatetimeIndex,
+    synthetic_returns: np.ndarray,
+    synthetic_prices: np.ndarray,
+    mean_synthetic_return_path: np.ndarray,
+    mean_synthetic_price_path: np.ndarray,
+    ticker_symbol: str,
+    n_paths_to_plot: int,
+    output_path: str | None = None,
+) -> plt.Figure:
+    """Plot the real series followed by its synthetic continuation, in log-return and price panels."""
+    figure, axes = plt.subplots(2, 1, figsize=(13, 9), sharex=False)
+
+    axes[0].plot(
+        return_dates, log_returns, color="royalblue", linewidth=0.9,
+        label="Log-retorno real",
+    )
+    for path in synthetic_returns[:n_paths_to_plot]:
+        axes[0].plot(synthetic_dates, path, color="tab:orange", alpha=0.15, linewidth=0.8)
+    axes[0].plot(
+        synthetic_dates, mean_synthetic_return_path, color="tab:orange",
+        linewidth=1.8, label="Log-retorno sintético (média dos caminhos)",
+    )
+    axes[0].axvline(return_dates[-1], color="gray", linestyle="--", linewidth=1)
+    axes[0].set_title(f"{ticker_symbol} — Log-retorno: real + continuação sintética")
+    axes[0].set_ylabel("Log-retorno")
+    axes[0].legend()
+
+    axes[1].plot(price_index, price_values, color="royalblue", linewidth=1.2, label="Preço real")
+    for path in synthetic_prices[:n_paths_to_plot]:
+        axes[1].plot(synthetic_dates, path, color="tab:orange", alpha=0.15, linewidth=0.8)
+    axes[1].plot(
+        synthetic_dates, mean_synthetic_price_path, color="tab:orange",
+        linewidth=1.8, label="Preço sintético (média dos caminhos)",
+    )
+    axes[1].axvline(
+        return_dates[-1], color="gray", linestyle="--", linewidth=1,
+        label="Fim da série real / início da sintética",
+    )
+    axes[1].set_title(f"{ticker_symbol} — Preço: real + continuação sintética")
+    axes[1].set_ylabel("Preço")
+    format_price_axis(axes[1])
+    axes[1].legend()
+
+    figure.tight_layout()
+    if output_path is not None:
+        figure.savefig(output_path, dpi=130)
+    plt.show()
+    return figure
+
+
+def plot_paths_grid(
+    real_tail_dates: pd.DatetimeIndex,
+    real_tail_values: np.ndarray,
+    synthetic_dates: pd.DatetimeIndex,
+    synthetic_paths: np.ndarray,
+    n_paths: int,
+    n_columns: int,
+    title_prefix: str,
+    y_axis_label: str,
+    output_path: str,
+    is_price: bool = False,
+) -> None:
+    """Plot a grid with one synthetic path per panel.
+
+    Each panel shows a recent slice of the real series immediately
+    followed by a single synthetic path, sharing the same time axis, to
+    make it easier to visually compare paths one at a time.
+
+    Args:
+        real_tail_dates: Dates corresponding to the recent slice of the
+            real series to display in every panel.
+        real_tail_values: Real series values aligned with
+            `real_tail_dates`.
+        synthetic_dates: Dates corresponding to the synthetic horizon.
+        synthetic_paths: Two-dimensional array of shape
+            (n_available_paths, horizon_days) with the synthetic paths.
+        n_paths: Number of synthetic paths to plot, one per panel.
+        n_columns: Number of columns in the grid.
+        title_prefix: Title shown at the top of the whole figure.
+        y_axis_label: Label used for the y-axis of the leftmost panels.
+        output_path: File path where the resulting figure is saved.
+        is_price: Whether the values represent prices, in which case the
+            y-axis is formatted as US dollars. Defaults to False.
+
+    Returns:
+        None. The figure is saved to `output_path` and displayed inline.
+
+    Example:
+        >>> plot_paths_grid(
+        ...     real_tail_dates=return_dates[-60:],
+        ...     real_tail_values=log_returns[-60:],
+        ...     synthetic_dates=synthetic_dates,
+        ...     synthetic_paths=synthetic_returns,
+        ...     n_paths=9,
+        ...     n_columns=3,
+        ...     title_prefix="AAPL — Log-retorno sintético",
+        ...     y_axis_label="Log-retorno",
+        ...     output_path="outputs/grid.png",
+        ... )
+    """
+    n_paths = min(n_paths, synthetic_paths.shape[0])
+    n_rows = int(np.ceil(n_paths / n_columns))
+
+    figure, axes = plt.subplots(
+        n_rows, n_columns, figsize=(4.2 * n_columns, 3.2 * n_rows), sharey=True,
+    )
+    axes = np.atleast_1d(axes).flatten()
+
+    for path_index in range(n_paths):
+        axis = axes[path_index]
+        axis.plot(real_tail_dates, real_tail_values, color="royalblue", linewidth=1.1, label="Real")
+        axis.plot(
+            synthetic_dates, synthetic_paths[path_index], color="tab:orange",
+            linewidth=1.3, label="Sintético",
+        )
+        axis.axvline(real_tail_dates[-1], color="gray", linestyle="--", linewidth=0.8)
+        axis.set_title(f"Caminho sintético {path_index + 1}", fontsize=10)
+        axis.tick_params(axis="x", labelrotation=45, labelsize=7)
+        axis.tick_params(axis="y", labelsize=7)
+        if is_price:
+            format_price_axis(axis)
+        if path_index % n_columns == 0:
+            axis.set_ylabel(y_axis_label, fontsize=9)
+
+    for empty_index in range(n_paths, len(axes)):
+        figure.delaxes(axes[empty_index])
+
+    handles, labels = axes[0].get_legend_handles_labels()
+    figure.legend(handles, labels, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 1.02), fontsize=10)
+    figure.suptitle(title_prefix, fontsize=13, y=1.06)
+    figure.tight_layout()
+    figure.savefig(output_path, dpi=130, bbox_inches="tight")
+    plt.show()
+    plt.close(figure)

@@ -10,6 +10,9 @@ from .plots import (
     plot_histogram_with_normal_curve,
     plot_sliding_window,
     plot_full_sliding_progress,
+    format_price_axis,
+    plot_real_vs_synthetic_continuation,
+    plot_paths_grid,
 )
 from .tickers import load_brazil_tickers, load_us_tickers
 
@@ -21,6 +24,9 @@ __all__ = [
     "plot_histogram_with_normal_curve",
     "plot_sliding_window",
     "plot_full_sliding_progress",
+    "format_price_axis",
+    "plot_real_vs_synthetic_continuation",
+    "plot_paths_grid",
     "load_brazil_tickers",
     "load_us_tickers",
 ]
