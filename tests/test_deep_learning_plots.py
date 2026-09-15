@@ -221,18 +221,20 @@ def test_plot_real_and_synthetic_continuation_returns_two_panels():
     mean_synthetic_return_path = synthetic_returns.mean(axis=0)
     mean_synthetic_price_path = synthetic_prices.mean(axis=0)
 
-    figure = plot_real_and_synthetic_continuation(
-        return_dates,
-        log_return_values,
-        price_dates,
-        price_values,
-        synthetic_dates,
-        synthetic_returns,
-        synthetic_prices,
-        mean_synthetic_return_path,
-        mean_synthetic_price_path,
-        "AAPL",
-        n_paths_to_plot=1,
+    figure, returns_grid_figure, prices_grid_figure = (
+        plot_real_and_synthetic_continuation(
+            return_dates,
+            log_return_values,
+            price_dates,
+            price_values,
+            synthetic_dates,
+            synthetic_returns,
+            synthetic_prices,
+            mean_synthetic_return_path,
+            mean_synthetic_price_path,
+            "AAPL",
+            n_paths_to_plot=1,
+        )
     )
 
     assert isinstance(figure, go.Figure)
@@ -254,3 +256,42 @@ def test_plot_real_and_synthetic_continuation_returns_two_panels():
     assert list(mean_price_trace.y) == mean_synthetic_price_path.tolist()
     assert "AAPL" in figure.layout.annotations[0].text
     assert "AAPL" in figure.layout.annotations[1].text
+
+    assert isinstance(returns_grid_figure, go.Figure)
+    assert isinstance(prices_grid_figure, go.Figure)
+    assert len(returns_grid_figure.data) == 2 * synthetic_returns.shape[0]
+    assert len(prices_grid_figure.data) == 2 * synthetic_prices.shape[0]
+    assert "AAPL" in returns_grid_figure.layout.title.text
+    assert "AAPL" in prices_grid_figure.layout.title.text
+
+
+def test_plot_real_and_synthetic_continuation_grid_respects_path_limit():
+    return_dates = np.arange(40)
+    log_return_values = np.linspace(-0.01, 0.01, 40)
+    price_dates = np.arange(40)
+    price_values = np.linspace(100.0, 110.0, 40)
+    synthetic_dates = np.arange(40, 43)
+    synthetic_returns = np.tile(np.array([0.01, 0.02, -0.01]), (5, 1))
+    synthetic_prices = np.tile(np.array([103.0, 105.0, 104.0]), (5, 1))
+    mean_synthetic_return_path = synthetic_returns.mean(axis=0)
+    mean_synthetic_price_path = synthetic_prices.mean(axis=0)
+
+    _, returns_grid_figure, _ = plot_real_and_synthetic_continuation(
+        return_dates,
+        log_return_values,
+        price_dates,
+        price_values,
+        synthetic_dates,
+        synthetic_returns,
+        synthetic_prices,
+        mean_synthetic_return_path,
+        mean_synthetic_price_path,
+        "AAPL",
+        n_grid_paths=2,
+        n_grid_columns=2,
+        tail_real_days_for_grid=10,
+    )
+
+    assert len(returns_grid_figure.data) == 4
+    real_trace = returns_grid_figure.data[0]
+    assert len(real_trace.y) == 10
