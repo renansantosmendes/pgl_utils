@@ -16,6 +16,7 @@ from .plots import (
     plot_loss_curve,
     plot_reconstruction_error_with_threshold,
     plot_outlier_detection_and_trading_signals,
+    plot_real_and_synthetic_continuation,
 )
 from .tickers import load_brazil_tickers, load_us_tickers
 from .trading import TradingSignalGenerator
@@ -34,6 +35,7 @@ __all__ = [
     "plot_loss_curve",
     "plot_reconstruction_error_with_threshold",
     "plot_outlier_detection_and_trading_signals",
+    "plot_real_and_synthetic_continuation",
     "load_brazil_tickers",
     "load_us_tickers",
     "TradingSignalGenerator",

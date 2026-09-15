@@ -589,3 +589,143 @@ def plot_loss_curve(
         template="plotly_white",
     )
     return figure
+
+
+def plot_real_and_synthetic_continuation(
+    return_dates: np.ndarray,
+    log_return_values: np.ndarray,
+    price_dates: np.ndarray,
+    price_values: np.ndarray,
+    synthetic_dates: pd.DatetimeIndex,
+    synthetic_returns: np.ndarray,
+    synthetic_prices: np.ndarray,
+    mean_synthetic_return_path: np.ndarray,
+    mean_synthetic_price_path: np.ndarray,
+    ticker: str,
+    n_paths_to_plot: int = 30,
+) -> go.Figure:
+    """Plot real series followed by GARCH-simulated continuations.
+
+    Args:
+        return_dates: Dates for every real log-return observation.
+        log_return_values: Real log-return values, aligned with
+            `return_dates`.
+        price_dates: Dates for every real price observation.
+        price_values: Real price values, aligned with `price_dates`.
+        synthetic_dates: Dates for the simulated horizon.
+        synthetic_returns: Array of shape (n_paths, horizon_days) with
+            the simulated log-return paths.
+        synthetic_prices: Array of shape (n_paths, horizon_days) with
+            the reconstructed synthetic price paths.
+        mean_synthetic_return_path: Average log-return path across all
+            simulated paths.
+        mean_synthetic_price_path: Average price path across all
+            simulated paths.
+        ticker: Ticker symbol shown in the panel titles.
+        n_paths_to_plot: Number of individual synthetic paths drawn in
+            each panel, in addition to the mean path.
+
+    Returns:
+        A Plotly figure with two stacked panels: log-return (top) and
+        price (bottom), each showing the real series followed by the
+        synthetic continuation.
+
+    Example:
+        >>> figure = plot_real_and_synthetic_continuation(
+        ...     df["date"].values,
+        ...     df["return"].values,
+        ...     df["date"].values,
+        ...     df["price"].values,
+        ...     synthetic_dates,
+        ...     synthetic_returns,
+        ...     synthetic_prices,
+        ...     mean_synthetic_return_path,
+        ...     mean_synthetic_price_path,
+        ...     TICKER,
+        ... )
+    """
+    figure = make_subplots(
+        rows=2,
+        cols=1,
+        subplot_titles=(
+            f"{ticker} - log-retorno real e continuacao sintetica (GARCH)",
+            f"{ticker} - preco real e continuacao sintetica (GARCH)",
+        ),
+    )
+
+    figure.add_trace(
+        go.Scatter(
+            x=return_dates,
+            y=log_return_values,
+            mode="lines",
+            name="Log-retorno real",
+            line=dict(color="steelblue", width=1),
+        ),
+        row=1,
+        col=1,
+    )
+    for path_index in range(min(n_paths_to_plot, synthetic_returns.shape[0])):
+        figure.add_trace(
+            go.Scatter(
+                x=synthetic_dates,
+                y=synthetic_returns[path_index],
+                mode="lines",
+                line=dict(color="orange", width=0.5),
+                opacity=0.25,
+                showlegend=False,
+            ),
+            row=1,
+            col=1,
+        )
+    figure.add_trace(
+        go.Scatter(
+            x=synthetic_dates,
+            y=mean_synthetic_return_path,
+            mode="lines",
+            name="Media sintetica",
+            line=dict(color="firebrick", width=2),
+        ),
+        row=1,
+        col=1,
+    )
+
+    figure.add_trace(
+        go.Scatter(
+            x=price_dates,
+            y=price_values,
+            mode="lines",
+            name="Preco real",
+            line=dict(color="steelblue", width=1),
+            showlegend=False,
+        ),
+        row=2,
+        col=1,
+    )
+    for path_index in range(min(n_paths_to_plot, synthetic_prices.shape[0])):
+        figure.add_trace(
+            go.Scatter(
+                x=synthetic_dates,
+                y=synthetic_prices[path_index],
+                mode="lines",
+                line=dict(color="orange", width=0.5),
+                opacity=0.25,
+                showlegend=False,
+            ),
+            row=2,
+            col=1,
+        )
+    figure.add_trace(
+        go.Scatter(
+            x=synthetic_dates,
+            y=mean_synthetic_price_path,
+            mode="lines",
+            name="Preco medio sintetico",
+            line=dict(color="firebrick", width=2),
+            showlegend=False,
+        ),
+        row=2,
+        col=1,
+    )
+
+    figure.update_layout(height=800, legend=dict(orientation="h"))
+    return figure

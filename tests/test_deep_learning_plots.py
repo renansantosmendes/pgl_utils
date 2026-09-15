@@ -13,6 +13,7 @@ from pgl_utils.deep_learning.plots import (
     plot_full_sliding_progress,
     plot_reconstruction_error_with_threshold,
     plot_outlier_detection_and_trading_signals,
+    plot_real_and_synthetic_continuation,
 )
 
 
@@ -207,3 +208,49 @@ def test_plot_outlier_detection_and_trading_signals_returns_two_panels():
     assert list(sell_trace.x) == dates[sell_indices].tolist()
     assert figure.layout.annotations[0].text == "Outlier panel"
     assert figure.layout.annotations[1].text == "Signal panel"
+
+
+def test_plot_real_and_synthetic_continuation_returns_two_panels():
+    return_dates = np.arange(5)
+    log_return_values = np.array([0.01, -0.02, 0.015, -0.01, 0.02])
+    price_dates = np.arange(5)
+    price_values = np.array([100.0, 101.0, 99.0, 100.5, 102.0])
+    synthetic_dates = np.arange(5, 8)
+    synthetic_returns = np.array([[0.01, 0.02, -0.01], [0.0, -0.01, 0.02]])
+    synthetic_prices = np.array([[103.0, 105.0, 104.0], [102.0, 101.0, 103.0]])
+    mean_synthetic_return_path = synthetic_returns.mean(axis=0)
+    mean_synthetic_price_path = synthetic_prices.mean(axis=0)
+
+    figure = plot_real_and_synthetic_continuation(
+        return_dates,
+        log_return_values,
+        price_dates,
+        price_values,
+        synthetic_dates,
+        synthetic_returns,
+        synthetic_prices,
+        mean_synthetic_return_path,
+        mean_synthetic_price_path,
+        "AAPL",
+        n_paths_to_plot=1,
+    )
+
+    assert isinstance(figure, go.Figure)
+    assert len(figure.data) == 6
+
+    (
+        real_return_trace,
+        synthetic_return_trace,
+        mean_return_trace,
+        real_price_trace,
+        synthetic_price_trace,
+        mean_price_trace,
+    ) = figure.data
+    assert list(real_return_trace.y) == log_return_values.tolist()
+    assert list(synthetic_return_trace.y) == synthetic_returns[0].tolist()
+    assert list(mean_return_trace.y) == mean_synthetic_return_path.tolist()
+    assert list(real_price_trace.y) == price_values.tolist()
+    assert list(synthetic_price_trace.y) == synthetic_prices[0].tolist()
+    assert list(mean_price_trace.y) == mean_synthetic_price_path.tolist()
+    assert "AAPL" in figure.layout.annotations[0].text
+    assert "AAPL" in figure.layout.annotations[1].text
