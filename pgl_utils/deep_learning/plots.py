@@ -591,6 +591,90 @@ def plot_loss_curve(
     return figure
 
 
+def _build_synthetic_paths_grid(
+    real_tail_dates: np.ndarray,
+    real_tail_values: np.ndarray,
+    synthetic_dates: pd.DatetimeIndex,
+    synthetic_paths: np.ndarray,
+    n_paths: int,
+    n_columns: int,
+    title_prefix: str,
+    y_axis_label: str,
+) -> go.Figure:
+    """Build a grid with one real-tail-plus-synthetic-path per panel.
+
+    Each panel shows a recent slice of the real series immediately
+    followed by a single synthetic path, sharing the same time axis,
+    to make it easier to visually compare paths one at a time.
+
+    Args:
+        real_tail_dates: Dates corresponding to the recent slice of
+            the real series to display in every panel.
+        real_tail_values: Real series values aligned with
+            `real_tail_dates`.
+        synthetic_dates: Dates corresponding to the synthetic horizon.
+        synthetic_paths: Two-dimensional array of shape
+            (n_available_paths, horizon_days) with the synthetic
+            paths.
+        n_paths: Number of synthetic paths to plot, one per panel.
+        n_columns: Number of columns in the grid.
+        title_prefix: Title shown at the top of the whole figure.
+        y_axis_label: Label used for the y-axis of the leftmost
+            panels.
+
+    Returns:
+        A Plotly figure with one panel per synthetic path, arranged in
+        a grid of `n_columns` columns.
+    """
+    n_paths = min(n_paths, synthetic_paths.shape[0])
+    n_rows = -(-n_paths // n_columns)
+
+    figure = make_subplots(
+        rows=n_rows,
+        cols=n_columns,
+        subplot_titles=[f"Caminho {path_index + 1}" for path_index in range(n_paths)],
+    )
+
+    for path_index in range(n_paths):
+        row = path_index // n_columns + 1
+        col = path_index % n_columns + 1
+
+        figure.add_trace(
+            go.Scatter(
+                x=real_tail_dates,
+                y=real_tail_values,
+                mode="lines",
+                name="Real",
+                line=dict(color="steelblue", width=1),
+                legendgroup="real",
+                showlegend=path_index == 0,
+            ),
+            row=row,
+            col=col,
+        )
+        figure.add_trace(
+            go.Scatter(
+                x=synthetic_dates,
+                y=synthetic_paths[path_index],
+                mode="lines",
+                name="Sintetico",
+                line=dict(color="firebrick", width=1),
+                legendgroup="sintetico",
+                showlegend=path_index == 0,
+            ),
+            row=row,
+            col=col,
+        )
+
+    figure.update_yaxes(title_text=y_axis_label, col=1)
+    figure.update_layout(
+        title=title_prefix,
+        height=280 * n_rows,
+        template="plotly_white",
+    )
+    return figure
+
+
 def plot_real_and_synthetic_continuation(
     return_dates: np.ndarray,
     log_return_values: np.ndarray,
@@ -603,7 +687,10 @@ def plot_real_and_synthetic_continuation(
     mean_synthetic_price_path: np.ndarray,
     ticker: str,
     n_paths_to_plot: int = 30,
-) -> go.Figure:
+    n_grid_paths: int = 9,
+    n_grid_columns: int = 3,
+    tail_real_days_for_grid: int = 30,
+) -> tuple[go.Figure, go.Figure, go.Figure]:
     """Plot real series followed by GARCH-simulated continuations.
 
     Args:
@@ -623,25 +710,39 @@ def plot_real_and_synthetic_continuation(
             simulated paths.
         ticker: Ticker symbol shown in the panel titles.
         n_paths_to_plot: Number of individual synthetic paths drawn in
-            each panel, in addition to the mean path.
+            the combined panel, in addition to the mean path.
+        n_grid_paths: Number of individual synthetic paths shown in
+            the grid, one per panel.
+        n_grid_columns: Number of columns used to arrange the grid
+            panels.
+        tail_real_days_for_grid: Number of most recent real
+            observations shown in every grid panel, preceding the
+            synthetic continuation.
 
     Returns:
-        A Plotly figure with two stacked panels: log-return (top) and
-        price (bottom), each showing the real series followed by the
-        synthetic continuation.
+        A tuple with three Plotly figures:
+        - The combined figure, with two stacked panels (log-return on
+          top, price on the bottom), each showing the real series
+          followed by every synthetic path overlaid and their mean.
+        - A grid figure with one synthetic log-return path per panel,
+          each preceded by the last `tail_real_days_for_grid` real
+          observations.
+        - The same grid, for the reconstructed synthetic prices.
 
     Example:
-        >>> figure = plot_real_and_synthetic_continuation(
-        ...     df["date"].values,
-        ...     df["return"].values,
-        ...     df["date"].values,
-        ...     df["price"].values,
-        ...     synthetic_dates,
-        ...     synthetic_returns,
-        ...     synthetic_prices,
-        ...     mean_synthetic_return_path,
-        ...     mean_synthetic_price_path,
-        ...     TICKER,
+        >>> continuation_figure, returns_grid, prices_grid = (
+        ...     plot_real_and_synthetic_continuation(
+        ...         df["date"].values,
+        ...         df["return"].values,
+        ...         df["date"].values,
+        ...         df["price"].values,
+        ...         synthetic_dates,
+        ...         synthetic_returns,
+        ...         synthetic_prices,
+        ...         mean_synthetic_return_path,
+        ...         mean_synthetic_price_path,
+        ...         TICKER,
+        ...     )
         ... )
     """
     figure = make_subplots(
@@ -728,4 +829,26 @@ def plot_real_and_synthetic_continuation(
     )
 
     figure.update_layout(height=800, legend=dict(orientation="h"))
-    return figure
+
+    returns_grid_figure = _build_synthetic_paths_grid(
+        real_tail_dates=return_dates[-tail_real_days_for_grid:],
+        real_tail_values=log_return_values[-tail_real_days_for_grid:],
+        synthetic_dates=synthetic_dates,
+        synthetic_paths=synthetic_returns,
+        n_paths=n_grid_paths,
+        n_columns=n_grid_columns,
+        title_prefix=f"{ticker} - log-retorno: real + caminhos sinteticos individuais",
+        y_axis_label="Log-retorno",
+    )
+    prices_grid_figure = _build_synthetic_paths_grid(
+        real_tail_dates=price_dates[-tail_real_days_for_grid:],
+        real_tail_values=price_values[-tail_real_days_for_grid:],
+        synthetic_dates=synthetic_dates,
+        synthetic_paths=synthetic_prices,
+        n_paths=n_grid_paths,
+        n_columns=n_grid_columns,
+        title_prefix=f"{ticker} - preco: real + caminhos sinteticos individuais",
+        y_axis_label="Preco",
+    )
+
+    return figure, returns_grid_figure, prices_grid_figure
