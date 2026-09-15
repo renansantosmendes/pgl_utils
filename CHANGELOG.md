@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.7.0 (2026-09-15)
+
+### Features
+
+- Add new plots
+  ([`2fc2268`](https://github.com/renansantosmendes/pgl_utils/commit/2fc22689129c26aa439f91480ffbe778d8d77d7a))
+
+
 ## v0.6.0 (2026-09-15)
 
 ### Features
