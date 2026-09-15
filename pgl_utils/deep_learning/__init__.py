@@ -14,8 +14,12 @@ from .plots import (
     plot_real_vs_synthetic_continuation,
     plot_paths_grid,
     plot_loss_curve,
+    plot_reconstruction_error_with_threshold,
+    plot_outlier_detection_and_trading_signals,
+    plot_real_and_synthetic_continuation,
 )
 from .tickers import load_brazil_tickers, load_us_tickers
+from .trading import TradingSignalGenerator
 
 __all__ = [
     "draw_neural_network",
@@ -29,6 +33,10 @@ __all__ = [
     "plot_real_vs_synthetic_continuation",
     "plot_paths_grid",
     "plot_loss_curve",
+    "plot_reconstruction_error_with_threshold",
+    "plot_outlier_detection_and_trading_signals",
+    "plot_real_and_synthetic_continuation",
     "load_brazil_tickers",
     "load_us_tickers",
+    "TradingSignalGenerator",
 ]

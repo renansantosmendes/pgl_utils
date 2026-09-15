@@ -11,6 +11,9 @@ from pgl_utils.deep_learning.plots import (
     plot_histogram_with_normal_curve,
     plot_sliding_window,
     plot_full_sliding_progress,
+    plot_reconstruction_error_with_threshold,
+    plot_outlier_detection_and_trading_signals,
+    plot_real_and_synthetic_continuation,
 )
 
 
@@ -154,3 +157,100 @@ def test_plot_full_sliding_progress_plots_all_windows_when_below_max():
 
     assert isinstance(figure, go.Figure)
     assert len(figure.data) == 1 + 20
+
+
+def test_plot_reconstruction_error_with_threshold_marks_outliers_and_threshold():
+    dates = np.arange(6)
+    reconstruction_scores = np.array([0.1, 0.2, 0.9, 0.15, 0.95, 0.1])
+    is_outlier = reconstruction_scores > 0.8
+
+    figure = plot_reconstruction_error_with_threshold(
+        dates,
+        reconstruction_scores,
+        is_outlier,
+        anomaly_threshold=0.8,
+        chart_title="Reconstruction error",
+    )
+
+    assert isinstance(figure, go.Figure)
+    assert len(figure.data) == 2
+    assert list(figure.data[0].y) == reconstruction_scores.tolist()
+    assert list(figure.data[1].x) == dates[is_outlier].tolist()
+    assert list(figure.data[1].y) == reconstruction_scores[is_outlier].tolist()
+    assert figure.layout.shapes[0].y0 == 0.8
+    assert figure.layout.title.text == "Reconstruction error"
+
+
+def test_plot_outlier_detection_and_trading_signals_returns_two_panels():
+    dates = np.arange(10)
+    price_values = np.linspace(100, 110, 10)
+    outlier_indices = np.array([2, 7])
+    buy_indices = np.array([2])
+    sell_indices = np.array([7])
+
+    figure = plot_outlier_detection_and_trading_signals(
+        dates,
+        price_values,
+        outlier_indices,
+        buy_indices,
+        sell_indices,
+        "Outlier panel",
+        "Signal panel",
+    )
+
+    assert isinstance(figure, go.Figure)
+    assert len(figure.data) == 5
+
+    price_trace, outlier_trace, price_trace_row2, buy_trace, sell_trace = figure.data
+    assert list(price_trace.y) == price_values.tolist()
+    assert list(outlier_trace.x) == dates[outlier_indices].tolist()
+    assert list(buy_trace.x) == dates[buy_indices].tolist()
+    assert list(sell_trace.x) == dates[sell_indices].tolist()
+    assert figure.layout.annotations[0].text == "Outlier panel"
+    assert figure.layout.annotations[1].text == "Signal panel"
+
+
+def test_plot_real_and_synthetic_continuation_returns_two_panels():
+    return_dates = np.arange(5)
+    log_return_values = np.array([0.01, -0.02, 0.015, -0.01, 0.02])
+    price_dates = np.arange(5)
+    price_values = np.array([100.0, 101.0, 99.0, 100.5, 102.0])
+    synthetic_dates = np.arange(5, 8)
+    synthetic_returns = np.array([[0.01, 0.02, -0.01], [0.0, -0.01, 0.02]])
+    synthetic_prices = np.array([[103.0, 105.0, 104.0], [102.0, 101.0, 103.0]])
+    mean_synthetic_return_path = synthetic_returns.mean(axis=0)
+    mean_synthetic_price_path = synthetic_prices.mean(axis=0)
+
+    figure = plot_real_and_synthetic_continuation(
+        return_dates,
+        log_return_values,
+        price_dates,
+        price_values,
+        synthetic_dates,
+        synthetic_returns,
+        synthetic_prices,
+        mean_synthetic_return_path,
+        mean_synthetic_price_path,
+        "AAPL",
+        n_paths_to_plot=1,
+    )
+
+    assert isinstance(figure, go.Figure)
+    assert len(figure.data) == 6
+
+    (
+        real_return_trace,
+        synthetic_return_trace,
+        mean_return_trace,
+        real_price_trace,
+        synthetic_price_trace,
+        mean_price_trace,
+    ) = figure.data
+    assert list(real_return_trace.y) == log_return_values.tolist()
+    assert list(synthetic_return_trace.y) == synthetic_returns[0].tolist()
+    assert list(mean_return_trace.y) == mean_synthetic_return_path.tolist()
+    assert list(real_price_trace.y) == price_values.tolist()
+    assert list(synthetic_price_trace.y) == synthetic_prices[0].tolist()
+    assert list(mean_price_trace.y) == mean_synthetic_price_path.tolist()
+    assert "AAPL" in figure.layout.annotations[0].text
+    assert "AAPL" in figure.layout.annotations[1].text
