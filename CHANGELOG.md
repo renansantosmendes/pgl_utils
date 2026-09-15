@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.6.0 (2026-09-15)
+
+### Features
+
+- Add new plots
+  ([`4ccbac9`](https://github.com/renansantosmendes/pgl_utils/commit/4ccbac9c0ac82ac688a002c277c60b06e0687fc5))
+
+- Add trading files
+  ([`f7b1d30`](https://github.com/renansantosmendes/pgl_utils/commit/f7b1d307a5a2cf7038b75d1b302a38e73c4da892))
+
+
 ## v0.5.0 (2026-09-08)
 
 ### Bug Fixes
