@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import torch
+from plotly.subplots import make_subplots
 from torch.utils.data import DataLoader
 
 
@@ -406,6 +407,163 @@ def plot_paths_grid(
     plt.close(figure)
     
     
+def plot_reconstruction_error_with_threshold(
+    dates: np.ndarray,
+    reconstruction_scores: np.ndarray,
+    is_outlier: np.ndarray,
+    anomaly_threshold: float,
+    chart_title: str,
+) -> go.Figure:
+    """Plot per-window reconstruction error alongside its anomaly threshold."""
+    figure = go.Figure()
+    figure.add_trace(
+        go.Scatter(
+            x=dates,
+            y=reconstruction_scores,
+            mode="lines",
+            name="Erro de reconstrução por janela",
+            line=dict(color="steelblue", width=1),
+        )
+    )
+    figure.add_trace(
+        go.Scatter(
+            x=dates[is_outlier],
+            y=reconstruction_scores[is_outlier],
+            mode="markers",
+            name="Janela classificada como outlier",
+            marker=dict(color="darkorange", symbol="triangle-up", size=10),
+        )
+    )
+    figure.add_hline(
+        y=anomaly_threshold,
+        line=dict(color="black", dash="dash", width=1),
+        annotation_text=f"Limiar de corte ({anomaly_threshold:.4f})",
+        annotation_position="top left",
+    )
+    figure.update_layout(
+        title=chart_title,
+        xaxis_title="Data",
+        yaxis_title="Erro de reconstrução (MSE)",
+        template="plotly_white",
+    )
+    return figure
+
+
+def plot_outlier_detection_and_trading_signals(
+    dates: np.ndarray,
+    price_values: np.ndarray,
+    outlier_indices: np.ndarray,
+    buy_indices: np.ndarray,
+    sell_indices: np.ndarray,
+    outlier_panel_title: str,
+    signal_panel_title: str,
+) -> go.Figure:
+    """Plot detected outliers and buy/sell trading signals over a price series.
+
+    Renders two stacked panels sharing the same x-axis: the top panel
+    highlights the points flagged as outliers by an anomaly detector,
+    and the bottom panel highlights the buy and sell signals derived
+    from those outliers.
+
+    Args:
+        dates: Dates for every observation in the price series.
+        price_values: Asset price for every observation, aligned with
+            `dates`.
+        outlier_indices: Positional indices, into `dates` and
+            `price_values`, of the observations flagged as outliers.
+        buy_indices: Positional indices of the observations with a
+            buy signal.
+        sell_indices: Positional indices of the observations with a
+            sell signal.
+        outlier_panel_title: Title shown above the outlier panel.
+        signal_panel_title: Title shown above the buy/sell panel.
+
+    Returns:
+        A Plotly figure with the two stacked panels.
+
+    Example:
+        >>> figure = plot_outlier_detection_and_trading_signals(
+        ...     df["date"].values,
+        ...     df["price"].values,
+        ...     outlier_indices,
+        ...     buy_indices,
+        ...     sell_indices,
+        ...     "AAPL - deteccao de outliers",
+        ...     "Sinais de compra e venda",
+        ... )
+    """
+    figure = make_subplots(
+        rows=2,
+        cols=1,
+        shared_xaxes=True,
+        subplot_titles=(outlier_panel_title, signal_panel_title),
+    )
+
+    figure.add_trace(
+        go.Scatter(
+            x=dates,
+            y=price_values,
+            mode="lines",
+            name="Preço",
+            line=dict(color="steelblue", width=1),
+            legendgroup="preco",
+        ),
+        row=1,
+        col=1,
+    )
+    figure.add_trace(
+        go.Scatter(
+            x=dates[outlier_indices],
+            y=price_values[outlier_indices],
+            mode="markers",
+            name="Outlier detectado",
+            marker=dict(color="darkorange", symbol="triangle-up", size=11),
+        ),
+        row=1,
+        col=1,
+    )
+
+    figure.add_trace(
+        go.Scatter(
+            x=dates,
+            y=price_values,
+            mode="lines",
+            name="Preço",
+            line=dict(color="steelblue", width=1),
+            legendgroup="preco",
+            showlegend=False,
+        ),
+        row=2,
+        col=1,
+    )
+    figure.add_trace(
+        go.Scatter(
+            x=dates[buy_indices],
+            y=price_values[buy_indices],
+            mode="markers",
+            name="Sinal de compra",
+            marker=dict(color="green", symbol="triangle-up", size=13),
+        ),
+        row=2,
+        col=1,
+    )
+    figure.add_trace(
+        go.Scatter(
+            x=dates[sell_indices],
+            y=price_values[sell_indices],
+            mode="markers",
+            name="Sinal de venda",
+            marker=dict(color="red", symbol="triangle-down", size=13),
+        ),
+        row=2,
+        col=1,
+    )
+
+    figure.update_xaxes(title_text="Data", row=2, col=1)
+    figure.update_layout(template="plotly_white")
+    return figure
+
+
 def plot_loss_curve(
     loss_history: list[float],
     chart_title: str,
